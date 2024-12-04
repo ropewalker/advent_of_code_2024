@@ -1,53 +1,49 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::HashMap;
-use std::iter::Iterator;
 
 #[aoc_generator(day4)]
-fn parse_input(input: &str) -> HashMap<(i32, i32), char> {
-    input
-        .lines()
-        .enumerate()
-        .flat_map(|(y, line)| {
-            line.chars()
-                .enumerate()
-                .map(move |(x, letter)| ((x as i32, y as i32), letter))
-                .collect::<Vec<_>>()
-        })
-        .collect()
+fn parse_input(input: &str) -> Vec<Vec<char>> {
+    input.lines().map(|line| line.chars().collect()).collect()
 }
 
 #[aoc(day4, part1)]
-fn part1(word_search: &HashMap<(i32, i32), char>) -> i32 {
+fn part1(word_search: &[Vec<char>]) -> usize {
     const XMAS: &str = "XMAS";
 
     let mut count = 0;
 
-    for ((x0, y0), letter) in word_search.iter() {
-        if !XMAS.starts_with(*letter) {
-            continue;
-        }
-
-        'next_direction: for (x_shift, y_shift) in [
-            (-1, -1),
-            (-1, 0),
-            (-1, 1),
-            (0, -1),
-            (0, 1),
-            (1, -1),
-            (1, 0),
-            (1, 1),
-        ] {
-            let (mut x, mut y) = (*x0, *y0);
-
-            for xmas_char in XMAS.chars().skip(1) {
-                (x, y) = (x + x_shift, y + y_shift);
-
-                if word_search.get(&(x, y)) != Some(&xmas_char) {
-                    continue 'next_direction;
-                }
+    for (y0, line) in word_search.iter().enumerate() {
+        for (x0, letter) in line.iter().enumerate() {
+            if !XMAS.starts_with(*letter) {
+                continue;
             }
 
-            count += 1;
+            'next_direction: for (x_shift, y_shift) in [
+                (-1, -1),
+                (-1, 0),
+                (-1, 1),
+                (0, -1),
+                (0, 1),
+                (1, -1),
+                (1, 0),
+                (1, 1),
+            ] {
+                let (mut x, mut y) = (x0 as i32, y0 as i32);
+
+                for xmas_char in XMAS.chars().skip(1) {
+                    (x, y) = (x + x_shift, y + y_shift);
+
+                    if x < 0
+                        || x as usize >= line.len()
+                        || y < 0
+                        || y as usize >= word_search.len()
+                        || word_search[y as usize][x as usize] != xmas_char
+                    {
+                        continue 'next_direction;
+                    }
+                }
+
+                count += 1;
+            }
         }
     }
 
@@ -55,21 +51,19 @@ fn part1(word_search: &HashMap<(i32, i32), char>) -> i32 {
 }
 
 #[aoc(day4, part2)]
-fn part2(word_search: &HashMap<(i32, i32), char>) -> i32 {
+fn part2(word_search: &[Vec<char>]) -> usize {
     let mut count = 0;
 
-    for ((x, y), letter) in word_search.iter() {
-        if *letter == 'A'
-            && (word_search.get(&(x - 1, y - 1)) == Some(&'M')
-                && word_search.get(&(x + 1, y + 1)) == Some(&'S')
-                || word_search.get(&(x - 1, y - 1)) == Some(&'S')
-                    && word_search.get(&(x + 1, y + 1)) == Some(&'M'))
-            && (word_search.get(&(x - 1, y + 1)) == Some(&'M')
-                && word_search.get(&(x + 1, y - 1)) == Some(&'S')
-                || word_search.get(&(x - 1, y + 1)) == Some(&'S')
-                    && word_search.get(&(x + 1, y - 1)) == Some(&'M'))
-        {
-            count += 1
+    for y in 1..word_search.len() - 1 {
+        for x in 1..word_search[0].len() - 1 {
+            if word_search[y][x] == 'A'
+                && (word_search[y - 1][x - 1] == 'M' && word_search[y + 1][x + 1] == 'S'
+                    || word_search[y - 1][x - 1] == 'S' && word_search[y + 1][x + 1] == 'M')
+                && (word_search[y + 1][x - 1] == 'M' && word_search[y - 1][x + 1] == 'S'
+                    || word_search[y + 1][x - 1] == 'S' && word_search[y - 1][x + 1] == 'M')
+            {
+                count += 1
+            }
         }
     }
 
