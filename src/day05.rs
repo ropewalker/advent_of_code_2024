@@ -12,29 +12,14 @@ fn parse_input(input: &str) -> (Vec<(i32, i32)>, Vec<Vec<i32>>) {
     parser.parse(input).unwrap()
 }
 
-fn is_in_right_order(update: &[i32], rule_violations: &HashMap<i32, HashSet<i32>>) -> bool {
-    let mut update: VecDeque<i32> = VecDeque::from(update.to_vec());
-    let mut visited: HashSet<i32> = HashSet::with_capacity(rule_violations.len());
-
-    while update.len() > 1 {
-        let current_page = update.pop_front().unwrap();
-
-        let mut nodes = VecDeque::from([current_page]);
-        visited.insert(current_page);
-
-        while !nodes.is_empty() {
-            let current_node = nodes.pop_front().unwrap();
-
-            for next_node in rule_violations.get(&current_node).into_iter().flatten() {
-                if visited.contains(next_node) {
-                    continue;
-                }
-
-                if update.contains(next_node) {
+fn is_in_right_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> bool {
+    for (page_position, page) in update.iter().enumerate() {
+        for subsequent_page in rules.get(page).into_iter().flatten() {
+            if let Some(subsequent_page_position) = update.iter().position(|x| x == subsequent_page)
+            {
+                if subsequent_page_position < page_position {
                     return false;
                 }
-
-                visited.insert(*next_node);
             }
         }
     }
@@ -43,20 +28,17 @@ fn is_in_right_order(update: &[i32], rule_violations: &HashMap<i32, HashSet<i32>
 }
 
 #[aoc(day5, part1)]
-fn part1((page_ordering_rules, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
-    let mut rule_violations: HashMap<i32, HashSet<i32>> = HashMap::new();
+fn part1((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
+    let mut rules: HashMap<i32, HashSet<i32>> = HashMap::new();
 
-    for (preceding, superseding) in page_ordering_rules.iter() {
-        rule_violations
-            .entry(*superseding)
-            .or_default()
-            .insert(*preceding);
+    for (preceding, superseding) in ordered_pairs.iter() {
+        rules.entry(*preceding).or_default().insert(*superseding);
     }
 
     updates
         .iter()
         .filter_map(|update| {
-            if is_in_right_order(update, &rule_violations) {
+            if is_in_right_order(update, &rules) {
                 Some(update[update.len() / 2])
             } else {
                 None
