@@ -47,65 +47,62 @@ fn part1((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
         .sum()
 }
 
-fn fix_order(update: &[i32], rule_violations: &HashMap<i32, HashSet<i32>>) -> Option<Vec<i32>> {
-    let mut update: VecDeque<i32> = VecDeque::from(update.to_vec());
-    let mut right_order = Vec::with_capacity(update.len());
-    let mut visited: HashSet<i32> = HashSet::with_capacity(rule_violations.len());
-    let mut fixed = false;
+fn fix_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> Option<Vec<i32>> {
+    let mut indegrees = HashMap::with_capacity(update.len());
 
-    'next_page: while update.len() > 1 {
-        let current_page = update.pop_front().unwrap();
-
-        let mut nodes = VecDeque::from([current_page]);
-
-        while !nodes.is_empty() {
-            let current_node = nodes.pop_front().unwrap();
-
-            for next_node in rule_violations.get(&current_node).into_iter().flatten() {
-                if visited.contains(next_node) {
-                    continue;
-                }
-
-                if let Some(index) = update.iter().position(|page| *page == *next_node) {
-                    update.remove(index);
-                    update.push_front(current_page);
-                    update.push_front(*next_node);
-                    fixed = true;
-                    continue 'next_page;
-                }
-
-                visited.insert(*next_node);
-            }
-
-            visited.insert(current_node);
+    for preceding_page in update.iter() {
+        for superseding_page in rules.get(preceding_page).into_iter().flatten() {
+            indegrees
+                .entry(superseding_page)
+                .and_modify(|indegree| *indegree += 1)
+                .or_insert(1);
         }
-
-        right_order.push(current_page);
     }
 
-    if fixed {
-        Some(right_order)
+    let mut result = Vec::with_capacity(update.len());
+
+    let mut queue = update
+        .iter()
+        .filter(|page| *indegrees.entry(page).or_default() == 0)
+        .collect::<VecDeque<_>>();
+
+    while let Some(page) = queue.pop_front() {
+        result.push(*page);
+
+        if let Some(superseding_pages) = rules.get(page) {
+            for next_page in update.iter() {
+                if superseding_pages.contains(next_page) {
+                    indegrees.entry(next_page).and_modify(|indegree| {
+                        *indegree -= 1;
+
+                        if *indegree == 0 {
+                            queue.push_back(next_page)
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    if update.iter().zip(result.iter()).any(|(a, b)| a != b) {
+        Some(result)
     } else {
         None
     }
 }
 
 #[aoc(day5, part2)]
-fn part2((page_ordering_rules, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
-    let mut rule_violations: HashMap<i32, HashSet<i32>> = HashMap::new();
+fn part2((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
+    let mut rules: HashMap<i32, HashSet<i32>> = HashMap::new();
 
-    for (preceding, superseding) in page_ordering_rules.iter() {
-        rule_violations
-            .entry(*superseding)
-            .or_default()
-            .insert(*preceding);
+    for (preceding, superseding) in ordered_pairs.iter() {
+        rules.entry(*preceding).or_default().insert(*superseding);
     }
 
     updates
         .iter()
         .filter_map(|update| {
-            fix_order(update, &rule_violations)
-                .map(|fixed_update| fixed_update[fixed_update.len() / 2])
+            fix_order(update, &rules).map(|fixed_update| fixed_update[fixed_update.len() / 2])
         })
         .sum()
 }
