@@ -2,17 +2,17 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[aoc_generator(day5)]
-fn parse_input(input: &str) -> (Vec<(i32, i32)>, Vec<Vec<i32>>) {
+fn parse_input(input: &str) -> (Vec<(usize, usize)>, Vec<Vec<usize>>) {
     use aoc_parse::{parser, prelude::*};
 
-    let rules = parser!(lines(i32 "|" i32));
-    let updates = parser!(lines(repeat_sep(i32, ",")));
+    let rules = parser!(lines(usize "|" usize));
+    let updates = parser!(lines(repeat_sep(usize, ",")));
     let parser = parser!(section(rules) section(updates));
 
     parser.parse(input).unwrap()
 }
 
-fn is_in_right_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> bool {
+fn is_in_right_order(update: &[usize], rules: &HashMap<usize, HashSet<usize>>) -> bool {
     for (page_position, page) in update.iter().enumerate() {
         for subsequent_page in rules.get(page).into_iter().flatten() {
             if let Some(subsequent_page_position) = update.iter().position(|x| x == subsequent_page)
@@ -28,8 +28,8 @@ fn is_in_right_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> bool
 }
 
 #[aoc(day5, part1)]
-fn part1((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
-    let mut rules: HashMap<i32, HashSet<i32>> = HashMap::new();
+fn part1((ordered_pairs, updates): &(Vec<(usize, usize)>, Vec<Vec<usize>>)) -> usize {
+    let mut rules: HashMap<usize, HashSet<usize>> = HashMap::new();
 
     for (preceding, superseding) in ordered_pairs.iter() {
         rules.entry(*preceding).or_default().insert(*superseding);
@@ -47,7 +47,7 @@ fn part1((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
         .sum()
 }
 
-fn fix_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> Vec<i32> {
+fn fix_order(update: &[usize], rules: &HashMap<usize, HashSet<usize>>) -> Vec<usize> {
     let mut indegrees = HashMap::with_capacity(update.len());
 
     for preceding_page in update.iter() {
@@ -86,8 +86,8 @@ fn fix_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> Vec<i32> {
 }
 
 #[aoc(day5, part2)]
-fn part2((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
-    let mut rules: HashMap<i32, HashSet<i32>> = HashMap::new();
+fn part2((ordered_pairs, updates): &(Vec<(usize, usize)>, Vec<Vec<usize>>)) -> usize {
+    let mut rules: HashMap<usize, HashSet<usize>> = HashMap::new();
 
     for (preceding, superseding) in ordered_pairs.iter() {
         rules.entry(*preceding).or_default().insert(*superseding);
