@@ -47,7 +47,7 @@ fn part1((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
         .sum()
 }
 
-fn fix_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> Option<Vec<i32>> {
+fn fix_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> Vec<i32> {
     let mut indegrees = HashMap::with_capacity(update.len());
 
     for preceding_page in update.iter() {
@@ -69,26 +69,20 @@ fn fix_order(update: &[i32], rules: &HashMap<i32, HashSet<i32>>) -> Option<Vec<i
     while let Some(page) = queue.pop_front() {
         result.push(*page);
 
-        if let Some(superseding_pages) = rules.get(page) {
-            for next_page in update.iter() {
-                if superseding_pages.contains(next_page) {
-                    indegrees.entry(next_page).and_modify(|indegree| {
-                        *indegree -= 1;
+        for superseding_page in rules.get(page).into_iter().flatten() {
+            if update.contains(superseding_page) {
+                indegrees.entry(superseding_page).and_modify(|indegree| {
+                    *indegree -= 1;
 
-                        if *indegree == 0 {
-                            queue.push_back(next_page)
-                        }
-                    });
-                }
+                    if *indegree == 0 {
+                        queue.push_back(superseding_page)
+                    }
+                });
             }
         }
     }
 
-    if update.iter().zip(result.iter()).any(|(a, b)| a != b) {
-        Some(result)
-    } else {
-        None
-    }
+    result
 }
 
 #[aoc(day5, part2)]
@@ -102,7 +96,11 @@ fn part2((ordered_pairs, updates): &(Vec<(i32, i32)>, Vec<Vec<i32>>)) -> i32 {
     updates
         .iter()
         .filter_map(|update| {
-            fix_order(update, &rules).map(|fixed_update| fixed_update[fixed_update.len() / 2])
+            if !is_in_right_order(update, &rules) {
+                Some(fix_order(update, &rules)[update.len() / 2])
+            } else {
+                None
+            }
         })
         .sum()
 }
