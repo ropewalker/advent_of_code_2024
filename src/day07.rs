@@ -20,7 +20,7 @@ fn can_be_true(test_value: &u64, operands: &[u64]) -> bool {
     evaluate(test_value, &operands[0], &operands[1..], false)
 }
 
-fn can_be_true_extended(test_value: &u64, operands: &[u64]) -> bool {
+fn can_be_true_with_concatenation(test_value: &u64, operands: &[u64]) -> bool {
     if operands.is_empty() {
         return false;
     }
@@ -28,7 +28,7 @@ fn can_be_true_extended(test_value: &u64, operands: &[u64]) -> bool {
     evaluate(test_value, &operands[0], &operands[1..], true)
 }
 
-fn evaluate(test_value: &u64, result: &u64, operands: &[u64], extended: bool) -> bool {
+fn evaluate(test_value: &u64, result: &u64, operands: &[u64], with_concatenation: bool) -> bool {
     if operands.is_empty() {
         return *result == *test_value;
     }
@@ -41,19 +41,19 @@ fn evaluate(test_value: &u64, result: &u64, operands: &[u64], extended: bool) ->
         test_value,
         &(*result + operands[0]),
         &operands[1..],
-        extended,
+        with_concatenation,
     ) || evaluate(
         test_value,
         &(*result * operands[0]),
         &operands[1..],
-        extended,
-    ) || (extended
+        with_concatenation,
+    ) || with_concatenation
         && evaluate(
             test_value,
             &((*result) * (10u64.pow(operands[0].ilog10() + 1)) + operands[0]),
             &operands[1..],
-            extended,
-        ))
+            with_concatenation,
+        )
 }
 
 #[aoc(day7, part1)]
@@ -75,7 +75,7 @@ fn part2(calibration_equations: &[(u64, Vec<u64>)]) -> u64 {
     calibration_equations
         .iter()
         .filter_map(|(test_value, operands)| {
-            if can_be_true_extended(test_value, operands) {
+            if can_be_true_with_concatenation(test_value, operands) {
                 Some(test_value)
             } else {
                 None
