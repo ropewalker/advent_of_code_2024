@@ -15,8 +15,8 @@ fn parse_input(input: &str) -> (Map, Position) {
     let mut guard_position = (0, 0);
 
     let bottom_right = (
-        input.lines().next().unwrap().len() as i32,
-        input.lines().count() as i32,
+        input.lines().next().unwrap().len() as i32 - 1,
+        input.lines().count() as i32 - 1,
     );
 
     input.lines().enumerate().for_each(|(y, line)| {
@@ -62,9 +62,9 @@ fn part1((map, guard_position): &(Map, Position)) -> usize {
     );
 
     while next_position.0 >= 0
-        && next_position.0 < map.bottom_right.0
+        && next_position.0 <= map.bottom_right.0
         && next_position.1 >= 0
-        && next_position.1 < map.bottom_right.1
+        && next_position.1 <= map.bottom_right.1
     {
         if map.obstacles.contains(&next_position) {
             direction = turn_right(direction);
@@ -104,9 +104,9 @@ fn part2((map, guard_position): &(Map, Position)) -> usize {
     let mut extra_obstacles: HashSet<Position> = HashSet::new();
 
     while next_position.0 >= 0
-        && next_position.0 < map.bottom_right.0
+        && next_position.0 <= map.bottom_right.0
         && next_position.1 >= 0
-        && next_position.1 < map.bottom_right.1
+        && next_position.1 <= map.bottom_right.1
     {
         if map.obstacles.contains(&next_position) {
             direction = turn_right(direction);
@@ -128,9 +128,9 @@ fn part2((map, guard_position): &(Map, Position)) -> usize {
                 );
 
                 while new_next_position.0 >= 0
-                    && new_next_position.0 < map.bottom_right.0
+                    && new_next_position.0 <= map.bottom_right.0
                     && new_next_position.1 >= 0
-                    && new_next_position.1 < map.bottom_right.1
+                    && new_next_position.1 <= map.bottom_right.1
                 {
                     if map.obstacles.contains(&new_next_position)
                         || extra_obstacle == Some(new_next_position)
