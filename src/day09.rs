@@ -1,5 +1,4 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::BTreeMap;
 use std::iter::Iterator;
 
 #[aoc_generator(day9)]
@@ -69,61 +68,61 @@ fn part1(disk_map: &[usize]) -> usize {
     filesystem_checksum
 }
 
+#[derive(Debug)]
+struct File {
+    id: usize,
+    address: usize,
+    length: usize,
+    adjacent_free_space: usize,
+}
+
 #[aoc(day9, part2)]
 fn part2(disk_map: &[usize]) -> usize {
-    let mut file_index: BTreeMap<usize, (usize, usize)> = BTreeMap::new();
-    let mut layout: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut layout: Vec<File> = Vec::new();
+    let mut block_count = 0;
 
-    let mut address = 0;
+    for (index, &length) in disk_map.iter().enumerate() {
+        if index % 2 == 0 {
+            layout.push(File {
+                id: index / 2,
+                address: block_count,
+                length,
+                adjacent_free_space: 0,
+            });
 
-    disk_map
-        .iter()
-        .enumerate()
-        .for_each(|(index, length)| match index % 2 {
-            0 => {
-                let file_id = index / 2;
-                file_index.insert(file_id, (address, *length));
-                layout.insert(address, file_id);
-                address += length;
-            }
-            1 => {
-                address += length;
-            }
-            _ => unreachable!(),
-        });
+            block_count += length;
+        } else {
+            let last_file = layout.last_mut().unwrap();
+            last_file.adjacent_free_space = length;
 
-    let mut file_id = (disk_map.len() - 1) / 2;
-
-    while file_id > 0 {
-        let (file_address, file_len) = file_index.get(&file_id).unwrap();
-        let mut new_address = *file_address;
-
-        for ((first_address, first_id), (second_address, second_id)) in
-            layout.iter().zip(layout.iter().skip(1))
-        {
-            let first_len = file_index.get(first_id).unwrap().1;
-            let gap_len = second_address - (first_address + first_len);
-
-            if gap_len >= *file_len {
-                new_address = first_address + first_len;
-                break;
-            } else if *second_id == file_id {
-                break;
-            }
+            block_count += length;
         }
-
-        layout.remove(file_address);
-        layout.insert(new_address, file_id);
-        file_index.insert(file_id, (new_address, *file_len));
-        file_id -= 1;
     }
 
-    layout
+    let mut moved_files: Vec<File> = Vec::with_capacity(layout.len());
+
+    'next_file: while let Some(mut file) = layout.pop() {
+        let mut i = 0;
+
+        while i < layout.len() {
+            if layout[i].adjacent_free_space >= file.length {
+                file.adjacent_free_space = layout[i].adjacent_free_space - file.length;
+                file.address = layout[i].address + layout[i].length;
+                layout[i].adjacent_free_space = 0;
+
+                layout.insert(i + 1, file);
+                continue 'next_file;
+            }
+
+            i += 1;
+        }
+
+        moved_files.push(file);
+    }
+
+    moved_files
         .iter()
-        .map(|(address, file_id)| {
-            let file_len = file_index.get(file_id).unwrap().1;
-            file_id * (2 * address + file_len - 1) * file_len / 2
-        })
+        .map(|file| file.id * (2 * file.address + file.length - 1) * file.length / 2)
         .sum()
 }
 
