@@ -12,59 +12,61 @@ fn parse_input(input: &str) -> Vec<usize> {
 
 #[aoc(day9, part1)]
 fn part1(disk_map: &[usize]) -> usize {
-    let mut layout: Vec<usize> = Vec::new();
+    let mut filesystem_checksum = 0;
+    let mut block_count = 0;
 
-    let mut head = 0;
-    let mut tail = disk_map.len() - 1;
+    let mut head_index = 0;
 
-    if tail % 2 != 0 {
-        tail -= 1;
+    let mut tail_index = disk_map.len() - 1;
+
+    if tail_index % 2 != 0 {
+        tail_index -= 1;
     }
 
-    let mut tail_id = tail / 2;
-    let mut tail_len = disk_map[tail];
-    let mut gap_len;
+    let mut tail_file_id = tail_index / 2;
+    let mut tail_file_length = disk_map[tail_index];
 
-    'label: while head < tail {
-        if head % 2 == 0 {
-            let head_id = head / 2;
-            let head_len = disk_map[head];
+    while head_index < tail_index {
+        if head_index % 2 == 0 {
+            let head_file_id = head_index / 2;
+            let head_file_length = disk_map[head_index];
 
-            layout.extend([head_id].into_iter().cycle().take(head_len));
-            head += 1;
+            filesystem_checksum +=
+                head_file_id * head_file_length * (2 * block_count + head_file_length - 1) / 2;
+            block_count += head_file_length;
+
+            head_index += 1;
         } else {
-            gap_len = disk_map[head];
+            let mut free_space_length = disk_map[head_index];
 
-            while gap_len >= tail_len {
-                layout.extend([tail_id].into_iter().cycle().take(tail_len));
+            while free_space_length > 0 && tail_index > head_index {
+                let filled_length = free_space_length.min(tail_file_length);
 
-                gap_len -= tail_len;
-                tail_len = 0;
+                filesystem_checksum +=
+                    tail_file_id * filled_length * (2 * block_count + filled_length - 1) / 2;
+                block_count += filled_length;
 
-                tail -= 2;
+                free_space_length -= filled_length;
+                tail_file_length -= filled_length;
 
-                if tail <= head {
-                    break 'label;
+                if tail_file_length == 0 {
+                    tail_index -= 2;
+
+                    tail_file_id = tail_index / 2;
+                    tail_file_length = disk_map[tail_index];
                 }
-
-                tail_id = tail / 2;
-                tail_len = disk_map[tail];
             }
 
-            layout.extend([tail_id].into_iter().cycle().take(gap_len));
-
-            tail_len -= gap_len;
-            head += 1;
+            head_index += 1;
         }
     }
 
-    layout.extend([tail_id].into_iter().cycle().take(tail_len));
+    if head_index == tail_index {
+        filesystem_checksum +=
+            tail_file_id * tail_file_length * (2 * block_count + tail_file_length - 1) / 2;
+    }
 
-    layout
-        .iter()
-        .enumerate()
-        .map(|(address, id)| address * id)
-        .sum()
+    filesystem_checksum
 }
 
 #[aoc(day9, part2)]
