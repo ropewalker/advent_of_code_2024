@@ -101,18 +101,30 @@ fn part2(disk_map: &[usize]) -> usize {
 
     let mut moved_files: Vec<File> = Vec::with_capacity(layout.len());
 
+    let mut max_length = None;
+    let mut last_processed_id = layout.last().unwrap().id;
+
     'next_file: while let Some(mut file) = layout.pop() {
+        if file.id > last_processed_id || max_length.is_some() && file.length >= max_length.unwrap()
+        {
+            moved_files.push(file);
+            continue;
+        }
+
         for i in 0..layout.len() {
             if layout[i].adjacent_free_space >= file.length {
                 file.adjacent_free_space = layout[i].adjacent_free_space - file.length;
                 file.address = layout[i].address + layout[i].length;
                 layout[i].adjacent_free_space = 0;
 
+                last_processed_id = file.id;
+
                 layout.insert(i + 1, file);
                 continue 'next_file;
             }
         }
 
+        max_length = Some(file.length).into_iter().chain(max_length).min();
         moved_files.push(file);
     }
 
