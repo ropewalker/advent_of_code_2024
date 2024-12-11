@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use std::collections::HashMap;
 
 #[aoc_generator(day11)]
 fn parse_input(input: &str) -> Vec<u64> {
@@ -8,45 +9,51 @@ fn parse_input(input: &str) -> Vec<u64> {
     parser.parse(input).unwrap()
 }
 
-fn blink(stones: &[u64]) -> Vec<u64> {
-    stones
-        .iter()
-        .flat_map(|stone| {
-            let num_digits = stone.checked_ilog10().unwrap_or(0) + 1;
+fn count_stones(initial_stones: &[u64], blink_count: usize) -> usize {
+    let mut result: HashMap<u64, usize> = initial_stones.iter().fold(
+        HashMap::with_capacity(initial_stones.len()),
+        |mut result, stone| {
+            *result.entry(*stone).or_default() += 1;
+            result
+        },
+    );
 
-            match (stone, num_digits) {
-                (0, _) => vec![1],
-                (stone, num_digits) if num_digits % 2 == 0 => {
-                    let split = 10u64.pow(num_digits / 2);
+    for _ in 1..=blink_count {
+        result = result
+            .iter()
+            .fold(HashMap::new(), |mut result, (&stone, &count)| {
+                let digit_count = stone.checked_ilog10().unwrap_or(0) + 1;
 
-                    vec![stone / split, stone % split]
+                match (stone, digit_count) {
+                    (stone, num_digits) if num_digits % 2 == 0 => {
+                        let split = 10u64.pow(num_digits / 2);
+
+                        *result.entry(stone / split).or_default() += count;
+                        *result.entry(stone % split).or_default() += count;
+                    }
+                    (0, _) => {
+                        *result.entry(1).or_default() += count;
+                    }
+                    _ => {
+                        *result.entry(stone * 2_024).or_default() += count;
+                    }
                 }
-                _ => vec![stone * 2024],
-            }
-        })
-        .collect::<Vec<_>>()
+
+                result
+            });
+    }
+
+    result.values().sum()
 }
 
 #[aoc(day11, part1)]
 fn part1(stones: &[u64]) -> usize {
-    let mut result = stones.to_vec();
-
-    for _ in 1..=25 {
-        result = blink(&result);
-    }
-
-    result.len()
+    count_stones(stones, 25)
 }
 
 #[aoc(day11, part2)]
 fn part2(stones: &[u64]) -> usize {
-    let mut result = stones.to_vec();
-
-    for _ in 1..=75 {
-        result = blink(&result);
-    }
-
-    result.len()
+    count_stones(stones, 75)
 }
 
 #[cfg(test)]
