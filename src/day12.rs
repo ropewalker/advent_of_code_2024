@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[aoc_generator(day12)]
 fn parse_input(input: &str) -> Vec<Vec<char>> {
@@ -11,7 +11,7 @@ fn region_price(
     (start_x, start_y): (usize, usize),
     claimed: &mut [Vec<bool>],
 ) -> usize {
-    let (bottom_right_x, bottom_right_y) = (map[0].len() - 1, map.len() - 1);
+    let (bottom_right_x, bottom_right_y) = ((map[0].len() - 1) as i32, (map.len() - 1) as i32);
 
     let mut area = 0;
     let mut perimeter = 0;
@@ -25,49 +25,30 @@ fn region_price(
     claimed[start_y][start_x] = true;
     area += 1;
 
-    let mut visited = HashSet::from([(start_x, start_y)]);
-    let mut queue = VecDeque::from([(start_x, start_y)]);
+    let mut visited = HashSet::from([(start_x as i32, start_y as i32)]);
+    let mut queue = VecDeque::from([(start_x as i32, start_y as i32)]);
 
     while let Some((x, y)) = queue.pop_front() {
-        let mut next_plots: Vec<(usize, usize)> = Vec::with_capacity(4);
+        for (direction_x, direction_y) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+            let (next_plot_x, next_plot_y) = (x + direction_x, y + direction_y);
 
-        if x > 0 {
-            next_plots.push((x - 1, y));
-        } else {
-            perimeter += 1;
-        }
-
-        if x < bottom_right_x {
-            next_plots.push((x + 1, y));
-        } else {
-            perimeter += 1;
-        }
-
-        if y > 0 {
-            next_plots.push((x, y - 1));
-        } else {
-            perimeter += 1;
-        }
-
-        if y < bottom_right_y {
-            next_plots.push((x, y + 1));
-        } else {
-            perimeter += 1;
-        }
-
-        for (next_plot_x, next_plot_y) in next_plots {
             if visited.contains(&(next_plot_x, next_plot_y)) {
                 continue;
             }
 
-            if map[next_plot_y][next_plot_x] == region_id {
+            if next_plot_x < 0
+                || next_plot_x > bottom_right_x
+                || next_plot_y < 0
+                || next_plot_y > bottom_right_y
+                || map[next_plot_y as usize][next_plot_x as usize] != region_id
+            {
+                perimeter += 1;
+            } else {
                 area += 1;
 
                 visited.insert((next_plot_x, next_plot_y));
                 queue.push_back((next_plot_x, next_plot_y));
-                claimed[next_plot_y][next_plot_x] = true;
-            } else {
-                perimeter += 1;
+                claimed[next_plot_y as usize][next_plot_x as usize] = true;
             }
         }
     }
@@ -96,7 +77,7 @@ fn region_discounted_price(
     (start_x, start_y): (usize, usize),
     claimed: &mut [Vec<bool>],
 ) -> usize {
-    let (bottom_right_x, bottom_right_y) = (map[0].len() - 1, map.len() - 1);
+    let (bottom_right_x, bottom_right_y) = ((map[0].len() - 1) as i32, (map.len() - 1) as i32);
 
     let mut area = 0;
     let mut number_of_sides = 0;
@@ -110,204 +91,63 @@ fn region_discounted_price(
     claimed[start_y][start_x] = true;
     area += 1;
 
-    let mut visited = HashSet::from([(start_x, start_y)]);
-    let mut queue = VecDeque::from([(start_x, start_y)]);
+    let mut visited = HashSet::from([(start_x as i32, start_y as i32)]);
+    let mut queue = VecDeque::from([(start_x as i32, start_y as i32)]);
 
-    let mut vertical_left_fences: HashSet<(usize, usize)> = HashSet::new();
-    let mut vertical_right_fences: HashSet<(usize, usize)> = HashSet::new();
-    let mut horizontal_up_fences: HashSet<(usize, usize)> = HashSet::new();
-    let mut horizontal_down_fences: HashSet<(usize, usize)> = HashSet::new();
+    let mut fences_by_direction: HashMap<(i32, i32), HashSet<(i32, i32)>> = HashMap::new();
 
     while let Some((x, y)) = queue.pop_front() {
-        if x > 0 {
-            let (next_plot_x, next_plot_y) = (x - 1, y);
+        for (direction_x, direction_y) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+            let (next_plot_x, next_plot_y) = (x + direction_x, y + direction_y);
 
-            if !visited.contains(&(next_plot_x, next_plot_y)) {
-                if map[next_plot_y][next_plot_x] == region_id {
-                    area += 1;
-
-                    visited.insert((next_plot_x, next_plot_y));
-                    queue.push_back((next_plot_x, next_plot_y));
-                    claimed[next_plot_y][next_plot_x] = true;
-                } else {
-                    vertical_left_fences.insert((x, y));
-                }
+            if visited.contains(&(next_plot_x, next_plot_y)) {
+                continue;
             }
-        } else {
-            vertical_left_fences.insert((x, y));
-        }
 
-        if x < bottom_right_x {
-            let (next_plot_x, next_plot_y) = (x + 1, y);
-
-            if !visited.contains(&(next_plot_x, next_plot_y)) {
-                if map[next_plot_y][next_plot_x] == region_id {
-                    area += 1;
-
-                    visited.insert((next_plot_x, next_plot_y));
-                    queue.push_back((next_plot_x, next_plot_y));
-                    claimed[next_plot_y][next_plot_x] = true;
-                } else {
-                    vertical_right_fences.insert((x + 1, y));
-                }
-            }
-        } else {
-            vertical_right_fences.insert((x + 1, y));
-        }
-
-        if y > 0 {
-            let (next_plot_x, next_plot_y) = (x, y - 1);
-
-            if !visited.contains(&(next_plot_x, next_plot_y)) {
-                if map[next_plot_y][next_plot_x] == region_id {
-                    area += 1;
-
-                    visited.insert((next_plot_x, next_plot_y));
-                    queue.push_back((next_plot_x, next_plot_y));
-                    claimed[next_plot_y][next_plot_x] = true;
-                } else {
-                    horizontal_up_fences.insert((x, y));
-                }
-            }
-        } else {
-            horizontal_up_fences.insert((x, y));
-        }
-
-        if y < bottom_right_y {
-            let (next_plot_x, next_plot_y) = (x, y + 1);
-
-            if !visited.contains(&(next_plot_x, next_plot_y)) {
-                if map[next_plot_y][next_plot_x] == region_id {
-                    area += 1;
-
-                    visited.insert((next_plot_x, next_plot_y));
-                    queue.push_back((next_plot_x, next_plot_y));
-                    claimed[next_plot_y][next_plot_x] = true;
-                } else {
-                    horizontal_down_fences.insert((x, y + 1));
-                }
-            }
-        } else {
-            horizontal_down_fences.insert((x, y + 1));
-        }
-    }
-
-    let mut counted_fences: HashSet<(usize, usize)> = HashSet::new();
-
-    for (fence_x, fence_y) in horizontal_up_fences.iter() {
-        if counted_fences.contains(&(*fence_x, *fence_y)) {
-            continue;
-        }
-
-        number_of_sides += 1;
-        counted_fences.insert((*fence_x, *fence_y));
-        let mut queue = vec![(*fence_x, *fence_y)];
-
-        while let Some((fence_x, fence_y)) = queue.pop() {
-            if fence_x > 0
-                && horizontal_up_fences.contains(&(fence_x - 1, fence_y))
-                && !counted_fences.contains(&(fence_x - 1, fence_y))
+            if next_plot_x < 0
+                || next_plot_x > bottom_right_x
+                || next_plot_y < 0
+                || next_plot_y > bottom_right_y
+                || map[next_plot_y as usize][next_plot_x as usize] != region_id
             {
-                queue.push((fence_x - 1, fence_y));
-                counted_fences.insert((fence_x - 1, fence_y));
-            }
+                fences_by_direction
+                    .entry((direction_x, direction_y))
+                    .or_default()
+                    .insert((next_plot_x, next_plot_y));
+            } else {
+                area += 1;
 
-            if fence_x <= bottom_right_x
-                && horizontal_up_fences.contains(&(fence_x + 1, fence_y))
-                && !counted_fences.contains(&(fence_x + 1, fence_y))
-            {
-                queue.push((fence_x + 1, fence_y));
-                counted_fences.insert((fence_x + 1, fence_y));
+                visited.insert((next_plot_x, next_plot_y));
+                queue.push_back((next_plot_x, next_plot_y));
+                claimed[next_plot_y as usize][next_plot_x as usize] = true;
             }
         }
     }
 
-    let mut counted_fences: HashSet<(usize, usize)> = HashSet::new();
+    for ((direction_x, direction_y), fences) in fences_by_direction.iter() {
+        let mut counted_fences: HashSet<(i32, i32)> = HashSet::new();
 
-    for (fence_x, fence_y) in horizontal_down_fences.iter() {
-        if counted_fences.contains(&(*fence_x, *fence_y)) {
-            continue;
-        }
-
-        number_of_sides += 1;
-        counted_fences.insert((*fence_x, *fence_y));
-        let mut queue = vec![(*fence_x, *fence_y)];
-
-        while let Some((fence_x, fence_y)) = queue.pop() {
-            if fence_x > 0
-                && horizontal_down_fences.contains(&(fence_x - 1, fence_y))
-                && !counted_fences.contains(&(fence_x - 1, fence_y))
-            {
-                queue.push((fence_x - 1, fence_y));
-                counted_fences.insert((fence_x - 1, fence_y));
+        for (fence_x, fence_y) in fences.iter() {
+            if counted_fences.contains(&(*fence_x, *fence_y)) {
+                continue;
             }
 
-            if fence_x <= bottom_right_x
-                && horizontal_down_fences.contains(&(fence_x + 1, fence_y))
-                && !counted_fences.contains(&(fence_x + 1, fence_y))
-            {
-                queue.push((fence_x + 1, fence_y));
-                counted_fences.insert((fence_x + 1, fence_y));
-            }
-        }
-    }
+            number_of_sides += 1;
+            counted_fences.insert((*fence_x, *fence_y));
+            let mut queue = vec![(*fence_x, *fence_y)];
 
-    let mut counted_fences: HashSet<(usize, usize)> = HashSet::new();
-
-    for (fence_x, fence_y) in vertical_left_fences.iter() {
-        if counted_fences.contains(&(*fence_x, *fence_y)) {
-            continue;
-        }
-
-        number_of_sides += 1;
-        counted_fences.insert((*fence_x, *fence_y));
-        let mut queue = vec![(*fence_x, *fence_y)];
-
-        while let Some((fence_x, fence_y)) = queue.pop() {
-            if fence_y > 0
-                && vertical_left_fences.contains(&(fence_x, fence_y - 1))
-                && !counted_fences.contains(&(fence_x, fence_y - 1))
-            {
-                queue.push((fence_x, fence_y - 1));
-                counted_fences.insert((fence_x, fence_y - 1));
-            }
-
-            if fence_y <= bottom_right_y
-                && vertical_left_fences.contains(&(fence_x, fence_y + 1))
-                && !counted_fences.contains(&(fence_x, fence_y + 1))
-            {
-                queue.push((fence_x, fence_y + 1));
-                counted_fences.insert((fence_x, fence_y + 1));
-            }
-        }
-    }
-
-    let mut counted_fences: HashSet<(usize, usize)> = HashSet::new();
-
-    for (fence_x, fence_y) in vertical_right_fences.iter() {
-        if counted_fences.contains(&(*fence_x, *fence_y)) {
-            continue;
-        }
-
-        number_of_sides += 1;
-        counted_fences.insert((*fence_x, *fence_y));
-        let mut queue = vec![(*fence_x, *fence_y)];
-
-        while let Some((fence_x, fence_y)) = queue.pop() {
-            if fence_y > 0
-                && vertical_right_fences.contains(&(fence_x, fence_y - 1))
-                && !counted_fences.contains(&(fence_x, fence_y - 1))
-            {
-                queue.push((fence_x, fence_y - 1));
-                counted_fences.insert((fence_x, fence_y - 1));
-            }
-
-            if fence_y <= bottom_right_y
-                && vertical_right_fences.contains(&(fence_x, fence_y + 1))
-                && !counted_fences.contains(&(fence_x, fence_y + 1))
-            {
-                queue.push((fence_x, fence_y + 1));
-                counted_fences.insert((fence_x, fence_y + 1));
+            while let Some((fence_x, fence_y)) = queue.pop() {
+                for (shift_x, shift_y) in [
+                    (*direction_y, *direction_x),
+                    (-(*direction_y), -(*direction_x)),
+                ] {
+                    if fences.contains(&(fence_x + shift_x, fence_y + shift_y))
+                        && !counted_fences.contains(&(fence_x + shift_x, fence_y + shift_y))
+                    {
+                        queue.push((fence_x + shift_x, fence_y + shift_y));
+                        counted_fences.insert((fence_x + shift_x, fence_y + shift_y));
+                    }
+                }
             }
         }
     }
