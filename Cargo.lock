@@ -10,6 +10,7 @@ dependencies = [
  "aoc-runner",
  "aoc-runner-derive",
  "num",
+ "num-rational",
 ]
 
 [[package]]
