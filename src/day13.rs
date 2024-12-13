@@ -1,16 +1,15 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use num_rational::*;
 
-const MAX_TIMES_PRESSED: i64 = 100;
-const PUSH_A_COST: i64 = 3;
-const PUSH_B_COST: i64 = 1;
-const EXTRA_DISTANCE: i64 = 10_000_000_000_000;
+const MAX_TIMES_PRESSED: usize = 100;
+const PUSH_A_COST: usize = 3;
+const PUSH_B_COST: usize = 1;
+const EXTRA_DISTANCE: usize = 10_000_000_000_000;
 
 #[derive(Debug)]
 struct MachineSetup {
-    button_a: (i64, i64),
-    button_b: (i64, i64),
-    prize_location: (i64, i64),
+    button_a: (usize, usize),
+    button_b: (usize, usize),
+    prize_location: (usize, usize),
 }
 
 #[aoc_generator(day13)]
@@ -18,9 +17,9 @@ fn parse_input(input: &str) -> Vec<MachineSetup> {
     use aoc_parse::{parser, prelude::*};
 
     let parser = parser!(sections(
-    button_a:line("Button A: X+" i64 ", Y+" i64)
-    button_b:line("Button B: X+" b_x:i64 ", Y+" b_y:i64)
-    prize_location:line("Prize: X=" prize_x:i64 ", Y=" prize_y:i64)
+    button_a:line("Button A: X+" usize ", Y+" usize)
+    button_b:line("Button B: X+" b_x:usize ", Y+" b_y:usize)
+    prize_location:line("Prize: X=" prize_x:usize ", Y=" prize_y:usize)
      => MachineSetup{
          button_a,
          button_b,
@@ -30,34 +29,24 @@ fn parse_input(input: &str) -> Vec<MachineSetup> {
     parser.parse(input).unwrap()
 }
 
-fn shortest_path_short(
+fn solve_machine(
     MachineSetup {
         button_a,
         button_b,
         prize_location,
     }: &MachineSetup,
     with_limit: bool,
-) -> Option<i64> {
-    let slope_a = Rational64::new(button_a.1, button_a.0);
-    let slope_b = Rational64::new(button_b.1, button_b.0);
+) -> Option<usize> {
+    let a_nom = prize_location.0 * button_b.1 - prize_location.1 * button_b.0;
+    let b_nom = button_a.0 * prize_location.1 - button_a.1 * prize_location.0;
+    let denom = button_a.0 * button_b.1 - button_a.1 * button_b.0;
 
-    let intersect_x = (Rational64::from_integer(prize_location.1)
-        - slope_b * Rational64::from_integer(prize_location.0))
-        / (slope_a - slope_b);
-    let intersect_y = slope_a * intersect_x;
+    if a_nom % denom == 0 && b_nom % denom == 0 {
+        let a_pressed = a_nom / denom;
+        let b_pressed = b_nom / denom;
 
-    if intersect_x.is_integer() && intersect_y.is_integer() {
-        let pressed_a = intersect_x / Rational64::from_integer(button_a.0);
-        let pressed_b = (Rational64::from_integer(prize_location.0) - intersect_x)
-            / Rational64::from_integer(button_b.0);
-
-        if pressed_a.is_integer()
-            && pressed_b.is_integer()
-            && (!with_limit
-                || pressed_a.to_integer() <= MAX_TIMES_PRESSED
-                    && pressed_b.to_integer() <= MAX_TIMES_PRESSED)
-        {
-            Some(pressed_a.to_integer() * PUSH_A_COST + pressed_b.to_integer() * PUSH_B_COST)
+        if !with_limit || a_pressed <= MAX_TIMES_PRESSED && b_pressed <= MAX_TIMES_PRESSED {
+            Some(a_pressed * PUSH_A_COST + b_pressed * PUSH_B_COST)
         } else {
             None
         }
@@ -67,15 +56,15 @@ fn shortest_path_short(
 }
 
 #[aoc(day13, part1)]
-fn part1(machines: &[MachineSetup]) -> i64 {
+fn part1(machines: &[MachineSetup]) -> usize {
     machines
         .iter()
-        .filter_map(|machine_setup| shortest_path_short(machine_setup, true))
+        .filter_map(|machine_setup| solve_machine(machine_setup, true))
         .sum()
 }
 
 #[aoc(day13, part2)]
-fn part2(machines: &[MachineSetup]) -> i64 {
+fn part2(machines: &[MachineSetup]) -> usize {
     machines
         .iter()
         .filter_map(
@@ -84,7 +73,7 @@ fn part2(machines: &[MachineSetup]) -> i64 {
                  button_b,
                  prize_location,
              }: &MachineSetup| {
-                shortest_path_short(
+                solve_machine(
                     &MachineSetup {
                         button_a: *button_a,
                         button_b: *button_b,
