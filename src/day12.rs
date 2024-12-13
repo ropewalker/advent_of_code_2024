@@ -134,19 +134,17 @@ fn region_discounted_price(
 
             number_of_sides += 1;
             counted_fences.insert((*fence_x, *fence_y));
-            let mut queue = vec![(*fence_x, *fence_y)];
 
-            while let Some((fence_x, fence_y)) = queue.pop() {
-                for (shift_x, shift_y) in [
-                    (*direction_y, *direction_x),
-                    (-(*direction_y), -(*direction_x)),
-                ] {
-                    if fences.contains(&(fence_x + shift_x, fence_y + shift_y))
-                        && !counted_fences.contains(&(fence_x + shift_x, fence_y + shift_y))
-                    {
-                        queue.push((fence_x + shift_x, fence_y + shift_y));
-                        counted_fences.insert((fence_x + shift_x, fence_y + shift_y));
-                    }
+            for (shift_x, shift_y) in [
+                (*direction_y, *direction_x),
+                (-(*direction_y), -(*direction_x)),
+            ] {
+                let (mut connected_x, mut connected_y) = (fence_x + shift_x, fence_y + shift_y);
+
+                while fences.contains(&(connected_x, connected_y)) && !counted_fences.contains(&(connected_x, connected_y)) {
+                    counted_fences.insert((connected_x, connected_y));
+                    connected_x += shift_x;
+                    connected_y += shift_y;
                 }
             }
         }

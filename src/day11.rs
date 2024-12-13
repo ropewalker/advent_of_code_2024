@@ -46,6 +46,36 @@ fn count_stones(initial_stones: &[u64], blink_count: usize) -> usize {
     result.values().sum()
 }
 
+fn process_stone(stone: u64, remaining_steps: usize, cache: &mut HashMap<(u64, usize), usize>) -> usize {
+    if let Some(result) = cache.get(&(stone, remaining_steps)) {
+        return *result;
+    }
+
+    if remaining_steps == 0 {
+        return 1;
+    }
+
+    let digit_count = stone.checked_ilog10().unwrap_or(0) + 1;
+
+
+    let result = match (stone, digit_count) {
+        (stone, num_digits) if num_digits % 2 == 0 => {
+            let split = 10u64.pow(num_digits / 2);
+            process_stone(stone / split, remaining_steps - 1, cache) + process_stone(stone % split, remaining_steps - 1, cache)
+        }
+        (0, _) => {
+            process_stone(1, remaining_steps - 1, cache)
+        }
+        _ => {
+            process_stone(stone * 2024, remaining_steps - 1, cache)
+        }
+    };
+
+    cache.insert((stone, remaining_steps), result);
+
+    result
+}
+
 #[aoc(day11, part1)]
 fn part1(stones: &[u64]) -> usize {
     count_stones(stones, 25)
@@ -54,6 +84,20 @@ fn part1(stones: &[u64]) -> usize {
 #[aoc(day11, part2)]
 fn part2(stones: &[u64]) -> usize {
     count_stones(stones, 75)
+}
+
+#[aoc(day11, part1, cache)]
+fn part1_with_cache(stones: &[u64]) -> usize {
+    let mut cache = HashMap::new();
+
+    stones.iter().map(|stone| process_stone(*stone, 25, &mut cache)).sum()
+}
+
+#[aoc(day11, part2, cache)]
+fn part2_with_cache(stones: &[u64]) -> usize {
+    let mut cache = HashMap::new();
+
+    stones.iter().map(|stone| process_stone(*stone, 75, &mut cache)).sum()
 }
 
 #[cfg(test)]
@@ -65,5 +109,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(part1(&parse_input(TEST_INPUT)), 55_312);
+    }
+
+    #[test]
+    fn part1_example_with_cache() {
+        assert_eq!(part1_with_cache(&parse_input(TEST_INPUT)), 55_312);
     }
 }
