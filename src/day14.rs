@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::HashSet;
+use modinverse::modinverse;
 
 const TIME_PASSED_SECONDS: i32 = 100;
 const ROOM_WIDTH: i32 = 101;
@@ -76,74 +76,66 @@ fn move_robots(robots: &[Robot], room_width: i32, room_height: i32, time: i32) -
         .collect()
 }
 
-fn find_cluster(robots: &[Robot], room_width: i32, room_height: i32) -> Option<(i32, i32)> {
-    let cluster_width = room_width / 2;
-    let cluster_height = room_height / 2;
+fn variances(robots: &[Robot]) -> (f32, f32) {
+    let count = robots.len() as f32;
+    let mean_x = robots.iter().map(|robot| robot.position.0).sum::<i32>() as f32 / count;
+    let mean_y = robots.iter().map(|robot| robot.position.1).sum::<i32>() as f32 / count;
 
-    let robots_count = robots.len();
-
-    let robots_map = robots.iter().fold(
-        vec![vec![0; room_width as usize]; room_height as usize],
-        |mut map, robot| {
-            map[robot.position.1 as usize][robot.position.0 as usize] += 1;
-            map
-        },
-    );
-
-    for y in 0..room_height - cluster_height + 1 {
-        for x in 0..room_width - cluster_width + 1 {
-            let cluster_count = robots_map[y as usize..(y + cluster_height) as usize]
-                .iter()
-                .map(|row| {
-                    row[x as usize..(x + cluster_width) as usize]
-                        .iter()
-                        .sum::<usize>()
-                })
-                .sum::<usize>();
-
-            if cluster_count >= robots_count / 2 {
-                return Some((x, y));
-            }
-        }
-    }
-
-    None
-}
-
-fn print_map(robots: &[Robot], room_width: i32, room_height: i32) {
-    let map = robots
+    let variance_x = robots
         .iter()
-        .map(|robot| robot.position)
-        .collect::<HashSet<_>>();
+        .map(|robot| {
+            let diff = mean_x - robot.position.0 as f32;
+            diff * diff
+        })
+        .sum::<f32>()
+        / count;
 
-    for y in 0..room_height {
-        for x in 0..room_width {
-            if map.contains(&(x, y)) {
-                print!("#");
-            } else {
-                print!(".");
-            }
-        }
+    let variance_y = robots
+        .iter()
+        .map(|robot| {
+            let diff = mean_y - robot.position.1 as f32;
+            diff * diff
+        })
+        .sum::<f32>()
+        / count;
 
-        println!();
-    }
+    (variance_x, variance_y)
 }
 
 #[aoc(day14, part2)]
 fn part2(robots: &[Robot]) -> i32 {
-    let mut time_passed = 0;
+    let mut min_variance_x: Option<f32> = None;
+    let mut min_variance_y: Option<f32> = None;
+    let mut time_x = 0;
+    let mut time_y = 0;
 
-    loop {
-        time_passed += 1;
+    for time_passed in 1..=usize::max(ROOM_WIDTH as usize, ROOM_HEIGHT as usize) {
+        let robots = move_robots(robots, ROOM_WIDTH, ROOM_HEIGHT, time_passed as i32);
+        let (variance_x, variance_y) = variances(&robots);
 
-        let robots = move_robots(robots, ROOM_WIDTH, ROOM_HEIGHT, time_passed);
+        match min_variance_x {
+            Some(min_variance_x) if min_variance_x < variance_x => {}
+            _ => {
+                min_variance_x = Some(variance_x);
+                time_x = time_passed as i32;
+            }
+        }
 
-        if find_cluster(&robots, ROOM_WIDTH, ROOM_HEIGHT).is_some() {
-            print_map(&robots, ROOM_WIDTH, ROOM_HEIGHT);
-
-            return time_passed;
+        match min_variance_y {
+            Some(min_variance_y) if min_variance_y < variance_y => {}
+            _ => {
+                min_variance_y = Some(variance_y);
+                time_y = time_passed as i32;
+            }
         }
     }
+
+    let modinverse = modinverse(ROOM_WIDTH, ROOM_HEIGHT).unwrap();
+
+    let time = ROOM_WIDTH * modinverse * (time_y - time_x) + time_x;
+    let max_time = ROOM_WIDTH * ROOM_HEIGHT;
+
+    (time % max_time + max_time) % max_time
 }
 
 #[cfg(test)]
