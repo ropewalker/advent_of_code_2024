@@ -13,7 +13,7 @@ fn parse_input(input: &str) -> WarehouseSetup {
     use aoc_parse::{parser, prelude::*};
 
     let parser = parser!(
-        section(lines(any_char+))
+        section(string(any_char+))
         section(moves:lines({
                 '<' => (-1, 0),
                 '>' => (1, 0),
@@ -29,9 +29,9 @@ fn parse_input(input: &str) -> WarehouseSetup {
     let mut robot: (i32, i32) = (0, 0);
 
     warehouse_map
-        .iter()
+        .lines()
         .enumerate()
-        .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, tile)| (x, y, tile)))
+        .flat_map(|(y, row)| row.chars().enumerate().map(move |(x, tile)| (x, y, tile)))
         .for_each(|(x, y, tile)| match tile {
             '#' => {
                 walls.insert((x as i32, y as i32));
