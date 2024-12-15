@@ -80,7 +80,7 @@ fn part1(warehouse_setup: &WarehouseSetup) -> i32 {
         }
 
         for moved_box in boxes_to_move.iter() {
-            boxes.remove(&moved_box);
+            boxes.remove(moved_box);
         }
 
         for moved_box in boxes_to_move.iter() {
@@ -92,8 +92,90 @@ fn part1(warehouse_setup: &WarehouseSetup) -> i32 {
 }
 
 #[aoc(day15, part2)]
-fn part2(warehouse_setup: &WarehouseSetup) -> usize {
-    unimplemented!()
+fn part2(warehouse_setup: &WarehouseSetup) -> i32 {
+    let walls: HashSet<(i32, i32)> = warehouse_setup
+        .walls
+        .iter()
+        .flat_map(|(x, y)| [(2 * x, *y), (2 * x + 1, *y)])
+        .collect();
+    let mut boxes: HashSet<(i32, i32)> = warehouse_setup
+        .boxes
+        .iter()
+        .map(|(x, y)| (2 * x, *y))
+        .collect();
+    let mut robot = (warehouse_setup.robot.0 * 2, warehouse_setup.robot.1);
+
+    for robot_move in warehouse_setup.moves.iter() {
+        let mut boxes_to_move = HashSet::new();
+
+        if robot_move.0 == 0 {
+            let mut front = HashSet::from([(robot.0, robot.1 + robot_move.1)]);
+
+            loop {
+                if walls.intersection(&front).count() > 0 {
+                    boxes_to_move.clear();
+                    break;
+                }
+
+                let mut touched_boxes = HashSet::with_capacity(front.len());
+
+                for front_piece in front.iter() {
+                    if boxes.contains(&(front_piece.0, front_piece.1)) {
+                        touched_boxes.insert((front_piece.0, front_piece.1));
+                    }
+
+                    if boxes.contains(&(front_piece.0 - 1, front_piece.1)) {
+                        touched_boxes.insert((front_piece.0 - 1, front_piece.1));
+                    }
+                }
+
+                if touched_boxes.is_empty() {
+                    robot.1 += robot_move.1;
+                    break;
+                }
+
+                let mut new_front = HashSet::with_capacity(touched_boxes.len() * 2);
+
+                for touched_box in touched_boxes.iter() {
+                    boxes_to_move.insert(*touched_box);
+                    new_front.insert((touched_box.0, touched_box.1 + robot_move.1));
+                    new_front.insert((touched_box.0 + 1, touched_box.1 + robot_move.1));
+                }
+
+                front = new_front;
+            }
+        } else {
+            let mut front = (robot.0 + robot_move.0, robot.1);
+
+            loop {
+                if walls.contains(&front) {
+                    boxes_to_move.clear();
+                    break;
+                }
+
+                if boxes.contains(&(front.0, front.1)) {
+                    boxes_to_move.insert((front.0, front.1));
+                    front = (front.0 + 2 * robot_move.0, front.1);
+                } else if boxes.contains(&(front.0 - 1, front.1)) {
+                    boxes_to_move.insert((front.0 - 1, front.1));
+                    front = (front.0 + 2 * robot_move.0, front.1);
+                } else {
+                    robot.0 += robot_move.0;
+                    break;
+                }
+            }
+        }
+
+        for moved_box in boxes_to_move.iter() {
+            boxes.remove(moved_box);
+        }
+
+        for moved_box in boxes_to_move.iter() {
+            boxes.insert((moved_box.0 + robot_move.0, moved_box.1 + robot_move.1));
+        }
+    }
+
+    boxes.iter().map(|(x, y)| 100 * y + x).sum::<i32>()
 }
 
 #[cfg(test)]
