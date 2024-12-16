@@ -90,11 +90,11 @@ fn part1(race_setup: &RaceSetup) -> Option<usize> {
     });
 
     while let Some(State {
-        position,
-        direction,
-        end,
-        score,
-    }) = frontier.pop()
+                       position,
+                       direction,
+                       end,
+                       score,
+                   }) = frontier.pop()
     {
         if position == end {
             return Some(score);
@@ -144,30 +144,73 @@ fn part1(race_setup: &RaceSetup) -> Option<usize> {
     None
 }
 
+#[derive(Clone, Eq, PartialEq)]
+struct ExtendedState {
+    position: Position,
+    direction: Direction,
+    end: Position,
+    score: usize,
+    path: Vec<Position>,
+}
+
+impl Ord for ExtendedState {
+    fn cmp(&self, other: &Self) -> Ordering {
+        State {
+            position: self.position,
+            direction: self.direction,
+            end: self.end,
+            score: self.score,
+        }.cmp(&State {
+            position: other.position,
+            direction: other.direction,
+            end: other.end,
+            score: other.score,
+        })
+    }
+}
+
+impl PartialOrd for ExtendedState {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 #[aoc(day16, part2)]
-fn part2(race_setup: &RaceSetup) -> Option<usize> {
+fn part2(race_setup: &RaceSetup) -> usize {
     let mut min_scores: HashMap<(Position, Direction), usize> = HashMap::new();
-    let mut best_seats: HashMap<(Position, Direction), HashSet<Position>> = HashMap::new();
+    let mut final_score: Option<usize> = None;
+    let mut best_seats: HashSet<Position> = HashSet::new();
 
     let mut frontier = BinaryHeap::new();
 
-    frontier.push(State {
+    frontier.push(ExtendedState {
         position: race_setup.start,
         direction: race_setup.start_direction,
         end: race_setup.end,
         score: 0,
+        path: vec![race_setup.start],
     });
 
-    while let Some(State {
-        position,
-        direction,
-        end,
-        score,
-    }) = frontier.pop()
+    while let Some(ExtendedState {
+                       position,
+                       direction,
+                       end,
+                       score,
+                       path
+                   }) = frontier.pop()
     {
-        if position == end {
-            continue;
-        }
+        match final_score {
+            Some(old_score) if old_score < score => {
+                continue;
+            }
+            _ => {
+                if position == end {
+                    final_score = Some(score);
+                    best_seats.extend(path.into_iter());
+                    continue;
+                }
+            }
+        };
 
         let min_score = min_scores.entry((position, direction)).or_insert(score);
 
@@ -176,23 +219,30 @@ fn part2(race_setup: &RaceSetup) -> Option<usize> {
         }
 
         for new_state in [
-            State {
+            ExtendedState {
                 position: (position.0 + direction.0, position.1 + direction.1),
                 direction,
                 end,
                 score: score + MOVE_COST,
+                path: {
+                    let mut new_path = path.clone();
+                    new_path.push((position.0 + direction.0, position.1 + direction.1));
+                    new_path
+                },
             },
-            State {
+            ExtendedState {
                 position,
                 direction: (direction.1, direction.0),
                 end,
                 score: score + TURN_COST,
+                path: path.clone(),
             },
-            State {
+            ExtendedState {
                 position,
                 direction: (-direction.1, -direction.0),
                 end,
                 score: score + TURN_COST,
+                path: path.clone(),
             },
         ] {
             if race_setup.obstacles.contains(&new_state.position) {
@@ -201,74 +251,16 @@ fn part2(race_setup: &RaceSetup) -> Option<usize> {
 
             let min_score = min_scores
                 .entry((new_state.position, new_state.direction))
-                .or_insert(new_state.score);
+                .or_insert(new_state.score + 1);
 
-            match new_state.score.cmp(&(*min_score)) {
-                Ordering::Less => {
-                    let current_best_seats = best_seats
-                        .get(&(position, direction))
-                        .unwrap_or(&HashSet::new())
-                        .clone();
-                    let next_best_seats = best_seats
-                        .entry((new_state.position, new_state.direction))
-                        .or_default();
-
-                    *next_best_seats = current_best_seats.clone();
-                    (*next_best_seats).insert(position);
-
-                    *min_score = new_state.score;
-                    frontier.push(new_state);
-                }
-                Ordering::Equal => {
-                    let current_best_seats = best_seats
-                        .get(&(position, direction))
-                        .unwrap_or(&HashSet::new())
-                        .clone();
-                    let next_best_seats = best_seats
-                        .entry((new_state.position, new_state.direction))
-                        .or_default();
-
-                    *next_best_seats = next_best_seats
-                        .union(&current_best_seats)
-                        .cloned()
-                        .collect();
-                    (*next_best_seats).insert(position);
-
-                    frontier.push(new_state);
-                }
-                Ordering::Greater => {}
+            if new_state.score <= *min_score {
+                *min_score = new_state.score;
+                frontier.push(new_state);
             }
         }
     }
 
-    if let Some(min_score) = min_scores
-        .iter()
-        .filter_map(|((position, _), score)| {
-            if *position == race_setup.end {
-                Some(*score)
-            } else {
-                None
-            }
-        })
-        .min()
-    {
-        let seats = best_seats
-            .iter()
-            .filter_map(|((position, direction), seats)| {
-                if *position == race_setup.end
-                    && *min_scores.get(&(*position, *direction)).unwrap() == min_score
-                {
-                    Some(seats)
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .collect::<HashSet<_>>();
-        Some(seats.len() + 1)
-    } else {
-        None
-    }
+    best_seats.len()
 }
 
 #[cfg(test)]
@@ -321,11 +313,11 @@ mod tests {
 
     #[test]
     fn part2_example_1() {
-        assert_eq!(part2(&parse_input(TEST_INPUT_1)), Some(45));
+        assert_eq!(part2(&parse_input(TEST_INPUT_1)), 45);
     }
 
     #[test]
     fn part2_example_2() {
-        assert_eq!(part2(&parse_input(TEST_INPUT_2)), Some(64));
+        assert_eq!(part2(&parse_input(TEST_INPUT_2)), 64);
     }
 }
