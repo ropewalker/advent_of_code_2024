@@ -46,7 +46,11 @@ fn count_stones(initial_stones: &[u64], blink_count: usize) -> usize {
     result.values().sum()
 }
 
-fn process_stone(stone: u64, remaining_steps: usize, cache: &mut HashMap<(u64, usize), usize>) -> usize {
+fn process_stone(
+    stone: u64,
+    remaining_steps: usize,
+    cache: &mut HashMap<(u64, usize), usize>,
+) -> usize {
     if let Some(result) = cache.get(&(stone, remaining_steps)) {
         return *result;
     }
@@ -57,18 +61,14 @@ fn process_stone(stone: u64, remaining_steps: usize, cache: &mut HashMap<(u64, u
 
     let digit_count = stone.checked_ilog10().unwrap_or(0) + 1;
 
-
     let result = match (stone, digit_count) {
         (stone, num_digits) if num_digits % 2 == 0 => {
             let split = 10u64.pow(num_digits / 2);
-            process_stone(stone / split, remaining_steps - 1, cache) + process_stone(stone % split, remaining_steps - 1, cache)
+            process_stone(stone / split, remaining_steps - 1, cache)
+                + process_stone(stone % split, remaining_steps - 1, cache)
         }
-        (0, _) => {
-            process_stone(1, remaining_steps - 1, cache)
-        }
-        _ => {
-            process_stone(stone * 2024, remaining_steps - 1, cache)
-        }
+        (0, _) => process_stone(1, remaining_steps - 1, cache),
+        _ => process_stone(stone * 2024, remaining_steps - 1, cache),
     };
 
     cache.insert((stone, remaining_steps), result);
@@ -90,14 +90,20 @@ fn part2(stones: &[u64]) -> usize {
 fn part1_with_cache(stones: &[u64]) -> usize {
     let mut cache = HashMap::new();
 
-    stones.iter().map(|stone| process_stone(*stone, 25, &mut cache)).sum()
+    stones
+        .iter()
+        .map(|stone| process_stone(*stone, 25, &mut cache))
+        .sum()
 }
 
 #[aoc(day11, part2, cache)]
 fn part2_with_cache(stones: &[u64]) -> usize {
     let mut cache = HashMap::new();
 
-    stones.iter().map(|stone| process_stone(*stone, 75, &mut cache)).sum()
+    stones
+        .iter()
+        .map(|stone| process_stone(*stone, 75, &mut cache))
+        .sum()
 }
 
 #[cfg(test)]

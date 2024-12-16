@@ -141,7 +141,9 @@ fn region_discounted_price(
             ] {
                 let (mut connected_x, mut connected_y) = (fence_x + shift_x, fence_y + shift_y);
 
-                while fences.contains(&(connected_x, connected_y)) && !counted_fences.contains(&(connected_x, connected_y)) {
+                while fences.contains(&(connected_x, connected_y))
+                    && !counted_fences.contains(&(connected_x, connected_y))
+                {
                     counted_fences.insert((connected_x, connected_y));
                     connected_x += shift_x;
                     connected_y += shift_y;
