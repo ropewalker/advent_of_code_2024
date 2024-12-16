@@ -100,7 +100,7 @@ fn part1(race_setup: &RaceSetup) -> Option<usize> {
             return Some(score);
         }
 
-        let min_score = min_scores.entry((position, direction)).or_insert(score + 1);
+        let min_score = min_scores.entry((position, direction)).or_insert(score);
 
         if score > *min_score {
             continue;
@@ -146,7 +146,129 @@ fn part1(race_setup: &RaceSetup) -> Option<usize> {
 
 #[aoc(day16, part2)]
 fn part2(race_setup: &RaceSetup) -> Option<usize> {
-    unimplemented!()
+    let mut min_scores: HashMap<(Position, Direction), usize> = HashMap::new();
+    let mut best_seats: HashMap<(Position, Direction), HashSet<Position>> = HashMap::new();
+
+    let mut frontier = BinaryHeap::new();
+
+    frontier.push(State {
+        position: race_setup.start,
+        direction: race_setup.start_direction,
+        end: race_setup.end,
+        score: 0,
+    });
+
+    while let Some(State {
+        position,
+        direction,
+        end,
+        score,
+    }) = frontier.pop()
+    {
+        if position == end {
+            continue;
+        }
+
+        let min_score = min_scores.entry((position, direction)).or_insert(score);
+
+        if score > *min_score {
+            continue;
+        }
+
+        for new_state in [
+            State {
+                position: (position.0 + direction.0, position.1 + direction.1),
+                direction,
+                end,
+                score: score + MOVE_COST,
+            },
+            State {
+                position,
+                direction: (direction.1, direction.0),
+                end,
+                score: score + TURN_COST,
+            },
+            State {
+                position,
+                direction: (-direction.1, -direction.0),
+                end,
+                score: score + TURN_COST,
+            },
+        ] {
+            if race_setup.obstacles.contains(&new_state.position) {
+                continue;
+            }
+
+            let min_score = min_scores
+                .entry((new_state.position, new_state.direction))
+                .or_insert(new_state.score);
+
+            match new_state.score.cmp(&(*min_score)) {
+                Ordering::Less => {
+                    let current_best_seats = best_seats
+                        .get(&(position, direction))
+                        .unwrap_or(&HashSet::new())
+                        .clone();
+                    let next_best_seats = best_seats
+                        .entry((new_state.position, new_state.direction))
+                        .or_default();
+
+                    *next_best_seats = current_best_seats.clone();
+                    (*next_best_seats).insert(position);
+
+                    *min_score = new_state.score;
+                    frontier.push(new_state);
+                }
+                Ordering::Equal => {
+                    let current_best_seats = best_seats
+                        .get(&(position, direction))
+                        .unwrap_or(&HashSet::new())
+                        .clone();
+                    let next_best_seats = best_seats
+                        .entry((new_state.position, new_state.direction))
+                        .or_default();
+
+                    *next_best_seats = next_best_seats
+                        .union(&current_best_seats)
+                        .cloned()
+                        .collect();
+                    (*next_best_seats).insert(position);
+
+                    frontier.push(new_state);
+                }
+                Ordering::Greater => {}
+            }
+        }
+    }
+
+    if let Some(min_score) = min_scores
+        .iter()
+        .filter_map(|((position, _), score)| {
+            if *position == race_setup.end {
+                Some(*score)
+            } else {
+                None
+            }
+        })
+        .min()
+    {
+        let seats = best_seats
+            .iter()
+            .filter_map(|((position, direction), seats)| {
+                if *position == race_setup.end
+                    && *min_scores.get(&(*position, *direction)).unwrap() == min_score
+                {
+                    Some(seats)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect::<HashSet<_>>();
+        Some(seats.len() + 1)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
