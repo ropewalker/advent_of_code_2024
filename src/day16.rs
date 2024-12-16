@@ -2,8 +2,8 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};
 
-const TURN_COST: usize = 1_000;
-const MOVE_COST: usize = 1;
+const TURN_COST: i32 = 1_000;
+const MOVE_COST: i32 = 1;
 
 type Position = (i32, i32);
 type Direction = (i32, i32);
@@ -52,21 +52,34 @@ struct State {
     position: Position,
     direction: Direction,
     end: Position,
-    score: usize,
+    score: i32,
 }
 
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .score
-            .cmp(&self.score)
-            .then_with(|| {
-                ((self.position.0 - self.end.0).abs() + (self.position.1 - self.end.1).abs()).cmp(
-                    &((other.position.0 - other.end.0).abs()
-                        + (other.position.1 - other.end.1).abs()),
-                )
-            })
-            .then_with(|| self.position.cmp(&other.position))
+        let self_priority = self.score
+            + (self.position.0 - self.end.0).abs()
+            + (self.position.1 - self.end.1).abs()
+            + {
+            if self.position.0 != self.end.0 && self.position.1 != self.end.1 {
+                TURN_COST
+            } else {
+                0
+            }
+        };
+
+        let other_priority = other.score
+            + (other.position.0 - other.end.0).abs()
+            + (other.position.1 - other.end.1).abs()
+            + {
+            if other.position.0 != other.end.0 && other.position.1 != other.end.1 {
+                TURN_COST
+            } else {
+                0
+            }
+        };
+
+        other_priority.cmp(&self_priority)
     }
 }
 
@@ -77,8 +90,8 @@ impl PartialOrd for State {
 }
 
 #[aoc(day16, part1)]
-fn part1(race_setup: &RaceSetup) -> Option<usize> {
-    let mut min_scores: HashMap<(Position, Direction), usize> = HashMap::new();
+fn part1(race_setup: &RaceSetup) -> Option<i32> {
+    let mut min_scores: HashMap<(Position, Direction), i32> = HashMap::new();
 
     let mut frontier = BinaryHeap::new();
 
@@ -149,7 +162,7 @@ struct ExtendedState {
     position: Position,
     direction: Direction,
     end: Position,
-    score: usize,
+    score: i32,
     path: Vec<Position>,
 }
 
@@ -160,12 +173,13 @@ impl Ord for ExtendedState {
             direction: self.direction,
             end: self.end,
             score: self.score,
-        }.cmp(&State {
-            position: other.position,
-            direction: other.direction,
-            end: other.end,
-            score: other.score,
-        })
+        }
+            .cmp(&State {
+                position: other.position,
+                direction: other.direction,
+                end: other.end,
+                score: other.score,
+            })
     }
 }
 
@@ -177,8 +191,8 @@ impl PartialOrd for ExtendedState {
 
 #[aoc(day16, part2)]
 fn part2(race_setup: &RaceSetup) -> usize {
-    let mut min_scores: HashMap<(Position, Direction), usize> = HashMap::new();
-    let mut final_score: Option<usize> = None;
+    let mut min_scores: HashMap<(Position, Direction), i32> = HashMap::new();
+    let mut final_score: Option<i32> = None;
     let mut best_seats: HashSet<Position> = HashSet::new();
 
     let mut frontier = BinaryHeap::new();
@@ -196,7 +210,7 @@ fn part2(race_setup: &RaceSetup) -> usize {
                        direction,
                        end,
                        score,
-                       path
+                       path,
                    }) = frontier.pop()
     {
         match final_score {
