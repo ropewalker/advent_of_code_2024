@@ -46,7 +46,7 @@ impl Computer {
                 self.instruction_pointer += 2;
             }
             2 => {
-                self.register_b = self.combo_operand(operand) % 8;
+                self.register_b = self.combo_operand(operand) & 7;
                 self.instruction_pointer += 2;
             }
             3 => {
@@ -61,7 +61,7 @@ impl Computer {
                 self.instruction_pointer += 2;
             }
             5 => {
-                self.output.push(self.combo_operand(operand) % 8);
+                self.output.push(self.combo_operand(operand) & 7);
                 self.instruction_pointer += 2;
             }
             6 => {
