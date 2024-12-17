@@ -61,23 +61,23 @@ impl Ord for State {
             + (self.position.0 - self.end.0).abs()
             + (self.position.1 - self.end.1).abs()
             + {
-            if self.position.0 != self.end.0 && self.position.1 != self.end.1 {
-                TURN_COST
-            } else {
-                0
-            }
-        };
+                if self.position.0 != self.end.0 && self.position.1 != self.end.1 {
+                    TURN_COST
+                } else {
+                    0
+                }
+            };
 
         let other_priority = other.score
             + (other.position.0 - other.end.0).abs()
             + (other.position.1 - other.end.1).abs()
             + {
-            if other.position.0 != other.end.0 && other.position.1 != other.end.1 {
-                TURN_COST
-            } else {
-                0
-            }
-        };
+                if other.position.0 != other.end.0 && other.position.1 != other.end.1 {
+                    TURN_COST
+                } else {
+                    0
+                }
+            };
 
         other_priority.cmp(&self_priority)
     }
@@ -103,11 +103,11 @@ fn part1(race_setup: &RaceSetup) -> Option<i32> {
     });
 
     while let Some(State {
-                       position,
-                       direction,
-                       end,
-                       score,
-                   }) = frontier.pop()
+        position,
+        direction,
+        end,
+        score,
+    }) = frontier.pop()
     {
         if position == end {
             return Some(score);
@@ -174,12 +174,12 @@ impl Ord for ExtendedState {
             end: self.end,
             score: self.score,
         }
-            .cmp(&State {
-                position: other.position,
-                direction: other.direction,
-                end: other.end,
-                score: other.score,
-            })
+        .cmp(&State {
+            position: other.position,
+            direction: other.direction,
+            end: other.end,
+            score: other.score,
+        })
     }
 }
 
@@ -206,12 +206,12 @@ fn part2(race_setup: &RaceSetup) -> usize {
     });
 
     while let Some(ExtendedState {
-                       position,
-                       direction,
-                       end,
-                       score,
-                       path,
-                   }) = frontier.pop()
+        position,
+        direction,
+        end,
+        score,
+        path,
+    }) = frontier.pop()
     {
         match final_score {
             Some(old_score) if old_score < score => {
