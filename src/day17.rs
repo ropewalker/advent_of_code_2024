@@ -17,7 +17,7 @@ impl Computer {
         }
     }
 
-    fn print_output(self) -> String {
+    fn print_output(&self) -> String {
         let mut output = String::new();
 
         if !self.output.is_empty() {
@@ -128,19 +128,106 @@ fn part2(computer: &Computer) -> usize {
 mod tests {
     use super::*;
 
-    static TEST_INPUT: &str = r"Register A: 729
+    static TEST_INPUT_1: &str = r"Register A: 729
 Register B: 0
 Register C: 0
 
 Program: 0,1,5,4,3,0";
 
+    static TEST_INPUT_2: &str = r"Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0";
+
+    #[test]
+    fn part1_program_example_1() {
+        let mut computer = Computer {
+            register_a: 0,
+            register_b: 0,
+            register_c: 9,
+            program: vec![2, 6],
+            instruction_pointer: 0,
+            output: vec![],
+        };
+
+        computer.run_program();
+
+        assert_eq!(computer.register_b, 1);
+    }
+
+    #[test]
+    fn part1_program_example_2() {
+        let mut computer = Computer {
+            register_a: 10,
+            register_b: 0,
+            register_c: 0,
+            program: vec![5, 0, 5, 1, 5, 4],
+            instruction_pointer: 0,
+            output: vec![],
+        };
+
+        computer.run_program();
+
+        assert_eq!(computer.print_output(), "0,1,2");
+    }
+
+    #[test]
+    fn part1_program_example_3() {
+        let mut computer = Computer {
+            register_a: 2_024,
+            register_b: 0,
+            register_c: 0,
+            program: vec![0, 1, 5, 4, 3, 0],
+            instruction_pointer: 0,
+            output: vec![],
+        };
+
+        computer.run_program();
+
+        assert_eq!(computer.print_output(), "4,2,5,6,7,7,7,7,3,1,0");
+        assert_eq!(computer.register_a, 0);
+    }
+
+    #[test]
+    fn part1_program_example_4() {
+        let mut computer = Computer {
+            register_a: 0,
+            register_b: 29,
+            register_c: 0,
+            program: vec![1, 7],
+            instruction_pointer: 0,
+            output: vec![],
+        };
+
+        computer.run_program();
+
+        assert_eq!(computer.register_b, 26);
+    }
+
+    #[test]
+    fn part1_program_example_5() {
+        let mut computer = Computer {
+            register_a: 0,
+            register_b: 2_024,
+            register_c: 43_690,
+            program: vec![4, 0],
+            instruction_pointer: 0,
+            output: vec![],
+        };
+
+        computer.run_program();
+
+        assert_eq!(computer.register_b, 44_354);
+    }
+
     #[test]
     fn part1_example() {
-        assert_eq!(part1(&parse_input(TEST_INPUT)), "4,6,3,5,6,3,5,2,1,0");
+        assert_eq!(part1(&parse_input(TEST_INPUT_1)), "4,6,3,5,6,3,5,2,1,0");
     }
 
     #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse_input(TEST_INPUT)), 117_440);
+        assert_eq!(part2(&parse_input(TEST_INPUT_2)), 117_440);
     }
 }
