@@ -17,7 +17,7 @@ fn combo_operand(memory: &Memory, operand: u64) -> u64 {
     }
 }
 
-fn run_program(memory: &mut Memory, program: &Vec<u64>) -> Vec<u64> {
+fn run_program(memory: &mut Memory, program: &[u64]) -> Vec<u64> {
     let mut instruction_pointer = 0;
     let mut output = Vec::new();
 
@@ -27,7 +27,7 @@ fn run_program(memory: &mut Memory, program: &Vec<u64>) -> Vec<u64> {
 
         match opcode {
             0 => {
-                memory.register_a >>= combo_operand(&memory, operand);
+                memory.register_a >>= combo_operand(memory, operand);
                 instruction_pointer += 2;
             }
             1 => {
@@ -35,7 +35,7 @@ fn run_program(memory: &mut Memory, program: &Vec<u64>) -> Vec<u64> {
                 instruction_pointer += 2;
             }
             2 => {
-                memory.register_b = combo_operand(&memory, operand) & 7;
+                memory.register_b = combo_operand(memory, operand) & 7;
                 instruction_pointer += 2;
             }
             3 => {
@@ -50,15 +50,15 @@ fn run_program(memory: &mut Memory, program: &Vec<u64>) -> Vec<u64> {
                 instruction_pointer += 2;
             }
             5 => {
-                output.push(combo_operand(&memory, operand) & 7);
+                output.push(combo_operand(memory, operand) & 7);
                 instruction_pointer += 2;
             }
             6 => {
-                memory.register_b = memory.register_a >> combo_operand(&memory, operand);
+                memory.register_b = memory.register_a >> combo_operand(memory, operand);
                 instruction_pointer += 2;
             }
             7 => {
-                memory.register_c = memory.register_a >> combo_operand(&memory, operand);
+                memory.register_c = memory.register_a >> combo_operand(memory, operand);
                 instruction_pointer += 2;
             }
             _ => unreachable!(),
