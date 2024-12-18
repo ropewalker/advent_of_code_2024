@@ -54,10 +54,13 @@ fn part1(corrupted_locations: &[(i32, i32)]) -> Option<usize> {
 }
 
 fn blocking_byte(corrupted_locations: &[(i32, i32)], exit: (i32, i32)) -> Option<(i32, i32)> {
-    let byte_indexes = corrupted_locations.iter().enumerate().fold(HashMap::new(), |mut indexes, (index, location)| {
-        indexes.entry(location).or_insert(index);
-        indexes
-    });
+    let byte_indexes = corrupted_locations.iter().enumerate().fold(
+        HashMap::new(),
+        |mut indexes, (index, location)| {
+            indexes.entry(location).or_insert(index);
+            indexes
+        },
+    );
 
     let start = (0, 0);
     let starting_index = if let Some(index) = byte_indexes.get(&start) {
@@ -84,7 +87,8 @@ fn blocking_byte(corrupted_locations: &[(i32, i32)], exit: (i32, i32)) -> Option
                 && next_position.1 >= 0
                 && next_position.1 <= exit.1
             {
-                if next_position == exit && index >= max_index && index < corrupted_locations.len() {
+                if next_position == exit && index >= max_index && index < corrupted_locations.len()
+                {
                     blocking_byte = Some(corrupted_locations[index]);
                     max_index = index;
                 }
