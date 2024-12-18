@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[aoc_generator(day18)]
 fn parse_input(input: &str) -> Vec<(i32, i32)> {
@@ -54,7 +54,64 @@ fn part1(corrupted_locations: &[(i32, i32)]) -> Option<usize> {
 }
 
 fn blocking_byte(corrupted_locations: &[(i32, i32)], exit: (i32, i32)) -> Option<(i32, i32)> {
-    unimplemented!()
+    let byte_indexes = corrupted_locations.iter().enumerate().fold(HashMap::new(), |mut indexes, (index, location)| {
+        indexes.entry(location).or_insert(index);
+        indexes
+    });
+
+    let start = (0, 0);
+    let starting_index = if let Some(index) = byte_indexes.get(&start) {
+        *index
+    } else {
+        corrupted_locations.len()
+    };
+
+    let mut queue = VecDeque::from([(start, starting_index)]);
+    let mut visited = HashMap::from([(start, starting_index)]);
+
+    let mut blocking_byte = None;
+    let mut max_index = 0;
+
+    while let Some((position, index)) = queue.pop_front() {
+        for next_position in [
+            (position.0 + 1, position.1),
+            (position.0 - 1, position.1),
+            (position.0, position.1 + 1),
+            (position.0, position.1 - 1),
+        ] {
+            if next_position.0 >= 0
+                && next_position.0 <= exit.0
+                && next_position.1 >= 0
+                && next_position.1 <= exit.1
+            {
+                if next_position == exit && index >= max_index && index < corrupted_locations.len() {
+                    blocking_byte = Some(corrupted_locations[index]);
+                    max_index = index;
+                }
+
+                if let Some(prev_index) = visited.get(&next_position) {
+                    if *prev_index >= index {
+                        continue;
+                    }
+                }
+
+                match byte_indexes.get(&next_position) {
+                    Some(corrupted_index) if *corrupted_index < index => {
+                        let new_index = *corrupted_index;
+
+                        queue.push_back((next_position, new_index));
+                        visited.insert(next_position, new_index);
+                    }
+                    _ => {
+                        queue.push_back((next_position, index));
+                        visited.insert(next_position, index);
+                    }
+                }
+            }
+        }
+    }
+
+    blocking_byte
 }
 
 #[aoc(day18, part2)]
