@@ -113,9 +113,56 @@ fn part1((memory, program): &(Memory, Vec<u64>)) -> String {
     print_output(&run_program(&mut memory.clone(), program))
 }
 
+fn search_a(memory: &mut Memory, iteration: usize, program: &[u64]) -> Option<u64> {
+    for remainder in 0..8 {
+        let multiplier = 8u64.pow(iteration as u32);
+
+        if memory.register_a + multiplier * remainder < 8u64.pow(program.len() as u32 - 1) {
+            continue;
+        }
+
+        let result = run_program(
+            &mut Memory {
+                register_a: memory.register_a + multiplier * remainder,
+                register_b: memory.register_b,
+                register_c: memory.register_c,
+            },
+            program,
+        );
+
+        if result[iteration] == program[iteration] {
+            return if iteration == 0 {
+                Some(memory.register_a + multiplier * remainder)
+            } else if let Some(register_a) = search_a(
+                &mut Memory {
+                    register_a: memory.register_a + multiplier * remainder,
+                    register_b: memory.register_b,
+                    register_c: memory.register_c,
+                },
+                iteration - 1,
+                program,
+            ) {
+                Some(register_a)
+            } else {
+                continue;
+            };
+        }
+    }
+
+    None
+}
+
 #[aoc(day17, part2)]
-fn part2((memory, program): &(Memory, Vec<u64>)) -> u64 {
-    unimplemented!()
+fn part2((_memory, program): &(Memory, Vec<u64>)) -> Option<u64> {
+    search_a(
+        &mut Memory {
+            register_a: 0,
+            register_b: 0,
+            register_c: 0,
+        },
+        program.len() - 1,
+        program,
+    )
 }
 
 #[cfg(test)]
@@ -142,7 +189,7 @@ Program: 0,3,5,4,3,0";
             register_c: 9,
         };
 
-        run_program(&mut memory, &vec![2, 6]);
+        run_program(&mut memory, &[2, 6]);
 
         assert_eq!(memory.register_b, 1);
     }
@@ -156,7 +203,7 @@ Program: 0,3,5,4,3,0";
         };
 
         assert_eq!(
-            print_output(&run_program(&mut memory, &vec![5, 0, 5, 1, 5, 4])),
+            print_output(&run_program(&mut memory, &[5, 0, 5, 1, 5, 4])),
             "0,1,2"
         );
     }
@@ -169,7 +216,7 @@ Program: 0,3,5,4,3,0";
             register_c: 0,
         };
 
-        let output = run_program(&mut memory, &vec![0, 1, 5, 4, 3, 0]);
+        let output = run_program(&mut memory, &[0, 1, 5, 4, 3, 0]);
 
         assert_eq!(print_output(&output), "4,2,5,6,7,7,7,7,3,1,0");
         assert_eq!(memory.register_a, 0);
@@ -183,7 +230,7 @@ Program: 0,3,5,4,3,0";
             register_c: 0,
         };
 
-        run_program(&mut memory, &vec![1, 7]);
+        run_program(&mut memory, &[1, 7]);
 
         assert_eq!(memory.register_b, 26);
     }
@@ -196,7 +243,7 @@ Program: 0,3,5,4,3,0";
             register_c: 43_690,
         };
 
-        run_program(&mut memory, &vec![4, 0]);
+        run_program(&mut memory, &[4, 0]);
 
         assert_eq!(memory.register_b, 44_354);
     }
@@ -208,6 +255,6 @@ Program: 0,3,5,4,3,0";
 
     #[test]
     fn part2_example() {
-        assert_eq!(part2(&parse_input(TEST_INPUT_2)), 117_440);
+        assert_eq!(part2(&parse_input(TEST_INPUT_2)), Some(117_440));
     }
 }
