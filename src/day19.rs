@@ -74,10 +74,6 @@ fn count_possibilities(
 fn part2((towels, patterns): &(HashSet<String>, Vec<String>)) -> usize {
     let mut index = HashMap::new();
 
-    towels.iter().for_each(|towel| {
-        count_possibilities(towel, towels, &mut index);
-    });
-
     patterns
         .iter()
         .map(|pattern| count_possibilities(pattern, towels, &mut index))
