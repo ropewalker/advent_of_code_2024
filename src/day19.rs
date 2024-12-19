@@ -20,8 +20,10 @@ fn is_possible(pattern: &str, towels: &HashSet<String>) -> bool {
     }
 
     for i in 1..=pattern.len() {
-        possible =
-            possible || towels.contains(&pattern[0..i]) && is_possible(&pattern[i..], towels);
+        let prefix = &pattern[0..i];
+        let postfix = &pattern[i..];
+
+        possible = possible || towels.contains(prefix) && is_possible(postfix, towels);
 
         if possible {
             return true;
