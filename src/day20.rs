@@ -42,6 +42,10 @@ fn parse_input(input: &str) -> RaceSetup {
     }
 }
 
+fn distance(position_a: &Position, position_b: &Position) -> i32 {
+    (position_b.0 - position_a.0).abs() + (position_b.1 - position_a.1).abs()
+}
+
 fn count_deprecated_cheats(race_setup: &RaceSetup, saved: i32) -> usize {
     let mut path = HashMap::from([(race_setup.start, 0)]);
     let mut position = race_setup.start;
@@ -87,8 +91,7 @@ fn part1(race_setup: &RaceSetup) -> usize {
 }
 
 fn count_latest_cheats(race_setup: &RaceSetup, saved: i32) -> usize {
-    let mut cost = 0;
-    let mut path = vec![(race_setup.start, cost)];
+    let mut path = vec![race_setup.start];
     let mut visited = HashSet::from([race_setup.start]);
     let mut position = race_setup.start;
 
@@ -101,8 +104,7 @@ fn count_latest_cheats(race_setup: &RaceSetup, saved: i32) -> usize {
         ] {
             if !visited.contains(&next_position) && !race_setup.obstacles.contains(&next_position) {
                 visited.insert(next_position);
-                cost += 1;
-                path.push((next_position, cost));
+                path.push(next_position);
                 position = next_position;
             }
         }
@@ -110,17 +112,12 @@ fn count_latest_cheats(race_setup: &RaceSetup, saved: i32) -> usize {
 
     let mut count = 0;
 
-    for i in 0..path.len() {
-        for j in i + 1..path.len() {
-            let (cheat_start, start_cost) = path[i];
-            let (cheat_end, end_cost) = path[j];
+    for cheat_start_index in 0..path.len() {
+        for cheat_end_index in cheat_start_index + 1..path.len() {
+            let distance = distance(&path[cheat_start_index], &path[cheat_end_index]);
 
-            if (cheat_end.0 - cheat_start.0).abs() + (cheat_end.1 - cheat_start.1).abs()
-                <= LATEST_CHEAT_DURATION
-                && end_cost - start_cost
-                    >= saved
-                        + (cheat_end.0 - cheat_start.0).abs()
-                        + (cheat_end.1 - cheat_start.1).abs()
+            if distance <= LATEST_CHEAT_DURATION
+                && (cheat_end_index - cheat_start_index) as i32 >= saved + distance
             {
                 count += 1;
             }
