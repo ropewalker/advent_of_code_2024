@@ -66,10 +66,6 @@ fn move_in_direction(position: &Position, direction: &Direction) -> Position {
     }
 }
 
-fn complexity(code: &[Button], num_robots: usize) -> usize {
-    numerical_value(code) * shortest_sequence_len(code, num_robots)
-}
-
 #[derive(Eq, PartialEq, Clone, Hash, Debug)]
 struct State {
     robot_positions: Vec<Position>,
@@ -93,7 +89,7 @@ fn shortest_sequence_len(code: &[Button], num_robots: usize) -> usize {
             return buttons_pressed;
         }
 
-        for button in [Move(Up), Move(Down), Move(Left), Move(Right), Activate] {
+        for button in [Activate, Move(Up), Move(Down), Move(Left), Move(Right)] {
             let mut level = 0;
             let mut button = button;
 
@@ -167,6 +163,10 @@ fn numerical_value(code: &[Button]) -> usize {
         Number(number) => value * 10 + *number as usize,
         _ => value,
     })
+}
+
+fn complexity(code: &[Button], num_robots: usize) -> usize {
+    numerical_value(code) * shortest_sequence_len(code, num_robots)
 }
 
 #[aoc(day21, part1)]
