@@ -66,29 +66,11 @@ fn move_in_direction(position: &Position, direction: &Direction) -> Position {
     }
 }
 
-#[derive(Eq, PartialEq, Clone, Hash, Debug)]
-struct State {
-    robot_positions: Vec<Position>,
-    output: Vec<Button>,
-}
-
-fn shortest_sequence_len(code: &[Button], num_robots: usize) -> usize {
-    let mut robot_positions = vec![(2, 0); num_robots - 1];
-    robot_positions.push((2, 3));
-
-    let initial_state = State {
-        robot_positions,
-        output: vec![],
-    };
-
-    let mut visited: HashSet<State> = HashSet::from([initial_state.clone()]);
-    let mut queue = VecDeque::from([(initial_state, 0)]);
+fn shortest_path(initial_state: &Vec<Position>, target: &Button) -> (Vec<Position>, usize) {
+    let mut visited: HashSet<Vec<Position>> = HashSet::from([initial_state.clone()]);
+    let mut queue = VecDeque::from([(initial_state.clone(), 0)]);
 
     while let Some((state, buttons_pressed)) = queue.pop_front() {
-        if state.output == code {
-            return buttons_pressed;
-        }
-
         for button in [Activate, Move(Up), Move(Down), Move(Left), Move(Right)] {
             let mut level = 0;
             let mut button = button;
@@ -96,55 +78,33 @@ fn shortest_sequence_len(code: &[Button], num_robots: usize) -> usize {
             loop {
                 match button {
                     Move(direction) => {
-                        let mut new_robot_positions = state.robot_positions.clone();
-                        new_robot_positions[level] =
-                            move_in_direction(&state.robot_positions[level], &direction);
+                        let mut new_state = state.clone();
+                        new_state[level] = move_in_direction(&state[level], &direction);
 
-                        if (level == num_robots - 1
-                            && NUMERIC_KEYPAD_LAYOUT.contains_key(&new_robot_positions[level]))
-                            || (level < num_robots - 1
-                                && DIRECTIONAL_KEYPAD_LAYOUT
-                                    .contains_key(&new_robot_positions[level]))
+                        if ((level == state.len() - 1
+                            && NUMERIC_KEYPAD_LAYOUT.contains_key(&new_state[level]))
+                            || (level < state.len() - 1
+                                && DIRECTIONAL_KEYPAD_LAYOUT.contains_key(&new_state[level])))
+                            && !visited.contains(&new_state)
                         {
-                            let new_state = State {
-                                robot_positions: new_robot_positions,
-                                output: state.output.clone(),
-                            };
-
-                            if !visited.contains(&new_state) {
-                                visited.insert(new_state.clone());
-                                queue.push_back((new_state, buttons_pressed + 1));
-                            }
+                            visited.insert(new_state.clone());
+                            queue.push_back((new_state, buttons_pressed + 1));
                         }
 
                         break;
                     }
                     Activate => {
-                        if level == num_robots - 1 {
-                            let new_output_button = *NUMERIC_KEYPAD_LAYOUT
-                                .get(&state.robot_positions[level])
-                                .unwrap();
+                        if level == state.len() - 1 {
+                            let new_output_button =
+                                NUMERIC_KEYPAD_LAYOUT.get(&state[level]).unwrap();
 
-                            if code[state.output.len()] == new_output_button {
-                                let mut new_output = state.output.clone();
-                                new_output.push(new_output_button);
-
-                                let new_state = State {
-                                    robot_positions: state.robot_positions.clone(),
-                                    output: new_output,
-                                };
-
-                                if !visited.contains(&new_state) {
-                                    visited.insert(new_state.clone());
-                                    queue.push_back((new_state, buttons_pressed + 1));
-                                }
+                            if target == new_output_button {
+                                return (state, buttons_pressed + 1);
                             }
 
                             break;
                         } else {
-                            button = *DIRECTIONAL_KEYPAD_LAYOUT
-                                .get(&state.robot_positions[level])
-                                .unwrap();
+                            button = *DIRECTIONAL_KEYPAD_LAYOUT.get(&state[level]).unwrap();
 
                             level += 1;
                         }
@@ -155,7 +115,21 @@ fn shortest_sequence_len(code: &[Button], num_robots: usize) -> usize {
         }
     }
 
-    unreachable!()
+    unreachable!();
+}
+
+fn shortest_sequence_len(code: &[Button], robots_count: usize) -> usize {
+    let mut robot_positions = vec![(2, 0); robots_count - 1];
+    robot_positions.push((2, 3));
+    let mut result = 0;
+
+    for button in code.iter() {
+        let (new_positions, buttons_pressed) = shortest_path(&robot_positions, button);
+        robot_positions = new_positions;
+        result += buttons_pressed;
+    }
+
+    result
 }
 
 fn numerical_value(code: &[Button]) -> usize {
