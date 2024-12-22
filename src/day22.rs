@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 const PRUNE_VALUE: i64 = 16_777_216;
 
@@ -40,60 +40,39 @@ fn part1(secret_numbers: &[i64]) -> i64 {
 
 #[aoc(day22, part2)]
 fn part2(secret_numbers: &[i64]) -> i64 {
-    let mut max_prices: Vec<HashMap<[i64; 4], i64>> = Vec::with_capacity(secret_numbers.len());
+    let mut total_price_per_sequence: HashMap<VecDeque<i64>, i64> = HashMap::new();
 
     for secret_number in secret_numbers {
         let mut secret_number = *secret_number;
         let mut price = secret_number % 10;
 
-        let mut prices = Vec::with_capacity(2_000);
-        let mut price_changes = Vec::with_capacity(2_000);
+        let mut sequence = VecDeque::with_capacity(4);
 
-        let mut max_prices_per_sequence: HashMap<[i64; 4], i64> = HashMap::new();
+        let mut encountered_sequences: HashSet<VecDeque<i64>> = HashSet::new();
 
         for _ in 0..2_000 {
             let new_secret_number = process(&secret_number);
             let new_price = new_secret_number % 10;
 
-            prices.push(new_price);
-            price_changes.push(new_price - price);
+            sequence.push_back(new_price - price);
+
+            if sequence.len() > 4 {
+                sequence.pop_front();
+            }
 
             secret_number = new_secret_number;
             price = new_price;
+
+            if sequence.len() == 4 && !encountered_sequences.contains(&sequence) {
+                *total_price_per_sequence
+                    .entry(sequence.clone())
+                    .or_default() += price;
+                encountered_sequences.insert(sequence.clone());
+            }
         }
-
-        price_changes
-            .windows(4)
-            .enumerate()
-            .for_each(|(index, sequence)| {
-                let price = prices[index + 3];
-
-                max_prices_per_sequence
-                    .entry(sequence.try_into().unwrap())
-                    .or_insert(price);
-            });
-
-        max_prices.push(max_prices_per_sequence);
     }
 
-    let sequences = max_prices.iter().fold(
-        HashSet::new(),
-        |mut sequences: HashSet<[i64; 4]>, sequence_prices_per_secret_number| {
-            sequences.extend(sequence_prices_per_secret_number.keys());
-            sequences
-        },
-    );
-
-    sequences
-        .iter()
-        .map(|sequence| {
-            max_prices
-                .iter()
-                .filter_map(|prices_per_sequence| prices_per_sequence.get(sequence))
-                .sum::<i64>()
-        })
-        .max()
-        .unwrap()
+    total_price_per_sequence.values().copied().max().unwrap()
 }
 
 #[cfg(test)]
