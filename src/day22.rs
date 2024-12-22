@@ -1,7 +1,4 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::{HashMap, HashSet, VecDeque};
-
-const PRUNE_VALUE: i64 = 16_777_216;
 
 #[aoc_generator(day22)]
 fn parse_input(input: &str) -> Vec<i64> {
@@ -15,13 +12,13 @@ fn mix(secret_number: &i64, value: i64) -> i64 {
 }
 
 fn prune(secret_number: &i64) -> i64 {
-    secret_number % PRUNE_VALUE
+    secret_number & (16_777_216 - 1)
 }
 
 fn process(secret_number: &i64) -> i64 {
-    let mut secret_number = prune(&mix(secret_number, secret_number * 64));
-    secret_number = prune(&mix(&secret_number, secret_number / 32));
-    secret_number = prune(&mix(&secret_number, secret_number * 2_048));
+    let mut secret_number = prune(&mix(secret_number, secret_number << 6));
+    secret_number = prune(&mix(&secret_number, secret_number >> 5));
+    secret_number = prune(&mix(&secret_number, secret_number << 11));
 
     secret_number
 }
@@ -40,39 +37,38 @@ fn part1(secret_numbers: &[i64]) -> i64 {
 
 #[aoc(day22, part2)]
 fn part2(secret_numbers: &[i64]) -> i64 {
-    let mut total_price_per_sequence: HashMap<VecDeque<i64>, i64> = HashMap::new();
+    let mut total_price_per_sequence = vec![0i64; 2usize.pow(20)];
 
     for secret_number in secret_numbers {
         let mut secret_number = *secret_number;
         let mut price = secret_number % 10;
 
-        let mut sequence = VecDeque::with_capacity(4);
+        let mut sequence = 0;
 
-        let mut encountered_sequences: HashSet<VecDeque<i64>> = HashSet::new();
+        let mut vec_encountered_sequences = vec![false; 2usize.pow(20)];
 
-        for _ in 0..2_000 {
+        for i in 0..2_000 {
             let new_secret_number = process(&secret_number);
             let new_price = new_secret_number % 10;
 
-            sequence.push_back(new_price - price);
+            sequence *= 32;
+            sequence += new_price - price + 9;
 
-            if sequence.len() > 4 {
-                sequence.pop_front();
+            if i > 3 {
+                sequence &= (2usize.pow(20) - 1) as i64;
             }
 
             secret_number = new_secret_number;
             price = new_price;
 
-            if sequence.len() == 4 && !encountered_sequences.contains(&sequence) {
-                *total_price_per_sequence
-                    .entry(sequence.clone())
-                    .or_default() += price;
-                encountered_sequences.insert(sequence.clone());
+            if i >= 3 && !vec_encountered_sequences[sequence as usize] {
+                total_price_per_sequence[sequence as usize] += price;
+                vec_encountered_sequences[sequence as usize] = true;
             }
         }
     }
 
-    total_price_per_sequence.values().copied().max().unwrap()
+    *total_price_per_sequence.iter().max().unwrap()
 }
 
 #[cfg(test)]
