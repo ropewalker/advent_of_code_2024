@@ -9,7 +9,6 @@ dependencies = [
  "aoc-parse",
  "aoc-runner",
  "aoc-runner-derive",
- "lazy_static",
  "modinverse",
  "num",
 ]
