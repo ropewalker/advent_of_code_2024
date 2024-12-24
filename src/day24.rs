@@ -1,11 +1,11 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use std::collections::HashMap;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 enum Operation {
+    Xor,
     And,
     Or,
-    Xor,
 }
 
 #[derive(Clone, Debug)]
@@ -116,7 +116,83 @@ fn format_result(wires: &[String]) -> String {
 
 #[aoc(day24, part2)]
 fn part2((initial_values, gates): &(HashMap<String, u8>, Vec<Gate>)) -> String {
-    unimplemented!()
+    use Operation::*;
+
+    let mut result: Vec<String> = Vec::with_capacity(8);
+
+    result.extend(gates.iter().filter_map(|gate| {
+        if gate.operation == Xor
+            && gate.input1.starts_with('x')
+            && gate.input1 != "x00"
+            && gate.output.starts_with('z')
+        {
+            Some(gate.output.clone())
+        } else {
+            None
+        }
+    }));
+
+    result.extend(gates.iter().filter_map(|gate| {
+        if gate.operation == Xor
+            && gate.input1.starts_with('x')
+            && gate.input1 != "x00"
+            && gates.iter().any(|or_gate| {
+                or_gate.operation == Or
+                    && (or_gate.input1 == gate.output || or_gate.input2 == gate.output)
+            })
+        {
+            Some(gate.output.clone())
+        } else {
+            None
+        }
+    }));
+
+    result.extend(gates.iter().filter_map(|gate| {
+        if gate.operation == Xor && !gate.input1.starts_with('x') && !gate.output.starts_with('z') {
+            Some(gate.output.clone())
+        } else {
+            None
+        }
+    }));
+
+    result.extend(gates.iter().filter_map(|gate| {
+        if gate.operation == And
+            && gate.input1.starts_with('x')
+            && gate.input1 != "x00"
+            && gates.iter().any(|and_or_xor_gate| {
+                (and_or_xor_gate.operation == And || and_or_xor_gate.operation == Xor)
+                    && (and_or_xor_gate.input1 == gate.output
+                        || and_or_xor_gate.input2 == gate.output)
+            })
+        {
+            Some(gate.output.clone())
+        } else {
+            None
+        }
+    }));
+
+    result.extend(gates.iter().filter_map(|gate| {
+        if gate.operation == And && gate.output.starts_with('z') {
+            Some(gate.output.clone())
+        } else {
+            None
+        }
+    }));
+
+    result.extend(gates.iter().filter_map(|gate| {
+        if gate.operation == Or
+            && (gate.input1.starts_with('x')
+                || gate.input2.starts_with('y')
+                || gate.output.starts_with('z')
+                    && gate.output != format!("z{:02}", initial_values.len() / 2))
+        {
+            Some(gate.output.clone())
+        } else {
+            None
+        }
+    }));
+
+    format_result(&result)
 }
 
 #[cfg(test)]
