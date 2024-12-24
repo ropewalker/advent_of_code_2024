@@ -108,7 +108,7 @@ fn part2(connections: &[(String, String)]) -> String {
         .iter()
         .collect::<Vec<_>>();
 
-    computers.sort();
+    computers.sort_unstable();
 
     password(&computers)
 }
